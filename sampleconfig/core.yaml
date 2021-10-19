@@ -647,9 +647,10 @@ ledger:
 
   state:
     # stateDatabase - options are "goleveldb", "CouchDB"
-    # goleveldb - default state database stored in goleveldb.
+    # goleveldb - traditional state database stored in goleveldb.
+    # grocksdb - default state database stored in linxGnu.
     # CouchDB - store state database in CouchDB
-    stateDatabase: goleveldb
+    stateDatabase: grocksdb
     # Limit on the number of records to return per query
     totalQueryLimit: 100000
     couchDBConfig:
