@@ -33,11 +33,12 @@ type DB struct {
 
 // CreateDB constructs a `DB`
 func CreateDB(conf *Conf) *DB {
-	readOpts := &rocksdb.ReadOptions{}
-	writeOptsNoSync := &rocksdb.WriteOptions{}
-	writeOptsSync := &rocksdb.WriteOptions{}
+	logger.Debugf("RocksDB constructing...")
+	readOpts := rocksdb.NewDefaultReadOptions()
+	writeOptsNoSync := rocksdb.NewDefaultWriteOptions()
+	writeOptsSync := rocksdb.NewDefaultWriteOptions()
 	writeOptsSync.SetSync(true)
-
+	logger.Debugf("RocksDB constructing successfully finished")
 	return &DB{
 		conf:            conf,
 		dbState:         closed,
@@ -49,6 +50,7 @@ func CreateDB(conf *Conf) *DB {
 
 // Open opens the underlying db
 func (dbInst *DB) Open() {
+	logger.Debugf("Opening DB...")
 	dbInst.mutex.Lock()
 	defer dbInst.mutex.Unlock()
 	if dbInst.dbState == opened {
@@ -64,18 +66,20 @@ func (dbInst *DB) Open() {
 	if dbInst.db, err = rocksdb.OpenDb(dbOpts, dbPath); err != nil {
 		panic(fmt.Sprintf("Error opening rocksdb: %s", err))
 	}
+	logger.Debugf("DB was successfully opened")
 	dbInst.dbState = opened
 }
 
 // IsEmpty returns whether or not a database is empty
 func (dbInst *DB) IsEmpty() (bool, error) {
+	logger.Debugf("Checkin if DB is empty...")
 	dbInst.mutex.RLock()
 	defer dbInst.mutex.RUnlock()
 	itr := dbInst.db.NewIterator(rocksdb.NewDefaultReadOptions())
 	defer itr.Close()
 	itr.SeekToFirst()
-	itr.Next()
 	hasItems := itr.Valid()
+	logger.Debugf("Checking for emptiness has finished")
 	return !hasItems,
 		errors.Wrapf(itr.Err(), "error while trying to see if the rocksdb at path [%s] is empty", dbInst.conf.DBPath)
 }

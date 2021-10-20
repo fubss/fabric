@@ -19,7 +19,8 @@ RUN apk add --no-cache \
 	binutils-gold \
 	gcc \
 	git \
-	make
+	make \
+    gflags
 ADD . $GOPATH/src/github.com/hyperledger/fabric
 WORKDIR $GOPATH/src/github.com/hyperledger/fabric
 
@@ -34,5 +35,10 @@ VOLUME /var/hyperledger
 COPY --from=peer /go/src/github.com/hyperledger/fabric/build/bin /usr/local/bin
 COPY --from=peer /go/src/github.com/hyperledger/fabric/sampleconfig/msp ${FABRIC_CFG_PATH}/msp
 COPY --from=peer /go/src/github.com/hyperledger/fabric/sampleconfig/core.yaml ${FABRIC_CFG_PATH}
+##Copying dynamic c libraries (*.so)
+COPY --from=peer /usr/local/rocksdb/lib /usr/local/rocksdb/lib
+COPY --from=peer /usr/lib /usr/lib
+COPY --from=peer /usr/local/rocksdb /usr/local/rocksdb
+COPY --from=peer /usr/include /usr/include
 EXPOSE 7051
 CMD ["peer","node","start"]

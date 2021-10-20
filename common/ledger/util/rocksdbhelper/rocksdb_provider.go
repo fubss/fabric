@@ -56,6 +56,7 @@ type Conf struct {
 
 // NewProvider constructs a Provider
 func NewProvider(conf *Conf) (*Provider, error) {
+	logger.Debugf("NewProvider intialization...")
 	db, err := openDBAndCheckFormat(conf)
 	if err != nil {
 		return nil, err
@@ -67,6 +68,7 @@ func NewProvider(conf *Conf) (*Provider, error) {
 }
 
 func openDBAndCheckFormat(conf *Conf) (d *DB, e error) {
+	logger.Debugf("Opening DB and checking format...")
 	db := CreateDB(conf)
 	db.Open()
 
