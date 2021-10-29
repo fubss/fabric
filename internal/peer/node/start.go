@@ -210,21 +210,23 @@ func serve(args []string) error {
 	if err != nil {
 		return err
 	}
-
+	logger.Debugf("GlobalConfig() finished. Creating platsormRegistry...") //TODO: delete this
 	platformRegistry := platforms.NewRegistry(platforms.SupportedPlatforms...)
-
+	logger.Debugf("creating newOperationSystem...") //TODO: delete this
 	opsSystem := newOperationsSystem(coreConfig)
+	logger.Debugf("newOperationSystem launching...") //TODO: delete this
 	err = opsSystem.Start()
 	if err != nil {
 		return errors.WithMessage(err, "failed to initialize operations subsystem")
 	}
 	defer opsSystem.Stop()
-
+	logger.Debugf("NewObserver creating...") //TODO: delete this
 	metricsProvider := opsSystem.Provider
 	logObserver := floggingmetrics.NewObserver(metricsProvider)
 	flogging.SetObserver(logObserver)
 
 	chaincodeInstallPath := filepath.Join(coreconfig.GetPath("peer.fileSystemPath"), "lifecycle", "chaincodes")
+	logger.Debugf("NewStore creating...") //TODO: delete this
 	ccStore := persistence.NewStore(chaincodeInstallPath)
 	ccPackageParser := &persistence.ChaincodePackageParser{
 		MetadataProvider: ccprovider.PersistenceAdapter(ccprovider.MetadataAsTarEntries),
@@ -236,13 +238,16 @@ func serve(args []string) error {
 	}
 
 	listenAddr := coreConfig.ListenAddress
+	logger.Debugf("Start getting peer server config...") //TODO: delete this
 	serverConfig, err := peer.GetServerConfig()
 	if err != nil {
 		logger.Fatalf("Error loading secure config for peer (%s)", err)
 	}
+	logger.Debugf("Peer server config got") //TODO: delete this
 
 	serverConfig.Logger = flogging.MustGetLogger("core.comm").With("server", "PeerServer")
 	serverConfig.ServerStatsHandler = comm.NewServerStatsHandler(metricsProvider)
+	logger.Debugf("Peer server params initializing...") //TODO: delete this
 	serverConfig.UnaryInterceptors = append(
 		serverConfig.UnaryInterceptors,
 		grpcmetrics.UnaryServerInterceptor(grpcmetrics.NewUnaryMetrics(metricsProvider)),
@@ -253,6 +258,7 @@ func serve(args []string) error {
 		grpcmetrics.StreamServerInterceptor(grpcmetrics.NewStreamMetrics(metricsProvider)),
 		grpclogging.StreamServerInterceptor(flogging.MustGetLogger("comm.grpc.server").Zap()),
 	)
+	logger.Debugf("GRPC semaphores initializing...") //TODO: delete this
 
 	semaphores := initGrpcSemaphores(coreConfig)
 	if len(semaphores) != 0 {
@@ -260,7 +266,9 @@ func serve(args []string) error {
 		serverConfig.StreamInterceptors = append(serverConfig.StreamInterceptors, streamGrpcLimiter(semaphores))
 	}
 
+	logger.Debugf("NewCredentialSupport...") //TODO: delete this
 	cs := comm.NewCredentialSupport()
+	logger.Debugf("serverConfig.SecOpts.UseTLS = %+v", serverConfig.SecOpts.UseTLS) //TODO: delete this
 	if serverConfig.SecOpts.UseTLS {
 		logger.Info("Starting peer with TLS enabled")
 		cs = comm.NewCredentialSupport(serverConfig.SecOpts.ServerRootCAs...)

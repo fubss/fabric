@@ -17,6 +17,7 @@ import (
 	"github.com/hyperledger/fabric/common/ledger/blkstorage"
 	"github.com/hyperledger/fabric/common/ledger/dataformat"
 	"github.com/hyperledger/fabric/common/ledger/util/leveldbhelper"
+	"github.com/hyperledger/fabric/common/ledger/util/rocksdbhelper"
 	"github.com/hyperledger/fabric/core/ledger"
 	"github.com/hyperledger/fabric/core/ledger/confighistory"
 	"github.com/hyperledger/fabric/core/ledger/kvledger/bookkeeping"
@@ -67,6 +68,7 @@ type Provider struct {
 	collElgNotifier      *collElgNotifier
 	stats                *stats
 	fileLock             *leveldbhelper.FileLock
+	rocksDBFileLock      *rocksdbhelper.FileLock
 }
 
 // NewProvider instantiates a new Provider.
@@ -97,6 +99,15 @@ func NewProvider(initializer *ledger.Initializer) (pr *Provider, e error) {
 	}
 
 	p.fileLock = fileLock
+
+	rocksDBFileLockPath := rocksDBFileLockPath(initializer.Config.RootFSPath)
+	rocksDBFileLock := rocksdbhelper.NewFileLock(rocksDBFileLockPath)
+	if err := rocksDBFileLock.Lock(); err != nil {
+		return nil, errors.Wrap(err, "as another peer node command is executing,"+
+			" wait for that command to complete its execution or terminate it before retrying")
+	}
+
+	p.rocksDBFileLock = rocksDBFileLock
 
 	if err := p.initLedgerIDInventory(); err != nil {
 		return nil, err
@@ -417,6 +428,9 @@ func (p *Provider) Close() {
 	}
 	if p.fileLock != nil {
 		p.fileLock.Unlock()
+	}
+	if p.rocksDBFileLock != nil {
+		p.rocksDBFileLock.Unlock()
 	}
 }
 

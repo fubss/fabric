@@ -159,7 +159,7 @@ func (h *DBHandle) Put(key []byte, value []byte, sync bool) error {
 // GetIterator gets an handle to iterator. The iterator should be released after the use.
 // The resultset contains all the keys that are present in the db between the startKey (inclusive) and the endKey (exclusive).
 // A nil startKey represents the first available key and a nil endKey represent a logical key after the last available key
-func (h *DBHandle) GetIterator(startKey []byte, endKey []byte) (*Iterator, error) {
+func (h *DBHandle) GetIterator(startKey []byte, endKey []byte) (Iterator, error) {
 	sKey := constructLevelKey(h.dbName, startKey)
 	eKey := constructLevelKey(h.dbName, endKey)
 	if endKey == nil {
@@ -170,9 +170,9 @@ func (h *DBHandle) GetIterator(startKey []byte, endKey []byte) (*Iterator, error
 	itr := h.db.GetIterator(sKey, eKey)
 	if err := itr.Err(); err != nil {
 		itr.Close()
-		return nil, errors.Wrapf(err, "internal leveldb error while obtaining db iterator")
+		return Iterator{}, errors.Wrapf(err, "internal rocksdb error while obtaining db iterator")
 	}
-	return &Iterator{h.dbName, itr}, nil
+	return Iterator{h.dbName, itr}, nil
 }
 
 // DeleteAll deletes all the keys that belong to the channel (dbName).

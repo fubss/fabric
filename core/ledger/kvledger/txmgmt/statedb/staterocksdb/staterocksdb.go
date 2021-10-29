@@ -269,12 +269,12 @@ func (vdb *versionedDB) importState(itr statedb.FullScanIterator, savepoint *ver
 
 type kvScanner struct {
 	namespace            string
-	dbItr                *rocksdbhelper.Iterator
+	dbItr                rocksdbhelper.Iterator
 	requestedLimit       int32
 	totalRecordsReturned int32
 }
 
-func newKVScanner(namespace string, dbItr *rocksdbhelper.Iterator, requestedLimit int32) *kvScanner {
+func newKVScanner(namespace string, dbItr rocksdbhelper.Iterator, requestedLimit int32) *kvScanner {
 	return &kvScanner{namespace, dbItr, requestedLimit, 0}
 }
 
@@ -307,7 +307,7 @@ func (scanner *kvScanner) Next() (*statedb.VersionedKV, error) {
 }
 
 func (scanner *kvScanner) Close() {
-	scanner.dbItr.Close()
+	scanner.dbItr.Iterator.Close()
 }
 
 func (scanner *kvScanner) GetBookmarkAndClose() string {
@@ -324,7 +324,7 @@ func (scanner *kvScanner) GetBookmarkAndClose() string {
 type fullDBScanner struct {
 	db *rocksdbhelper.DBHandle
 	//TODO add to kv-common-provider or interface
-	dbItr  *rocksdbhelper.Iterator
+	dbItr  rocksdbhelper.Iterator
 	toSkip func(namespace string) bool
 }
 
@@ -366,7 +366,7 @@ func (s *fullDBScanner) Next() (*statedb.VersionedKV, error) {
 			s.dbItr.Prev() //TODO: why Prev()?
 		}
 	}
-	return nil, errors.Wrap(s.dbItr.Err(), "internal leveldb error while retrieving data from db iterator")
+	return nil, errors.Wrap(s.dbItr.Err(), "internal rocksdb error while retrieving data from db iterator")
 }
 
 func (s *fullDBScanner) Close() {

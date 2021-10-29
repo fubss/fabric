@@ -23,6 +23,7 @@ func PauseChannel(rootFSPath, ledgerID string) error {
 
 // ResumeChannel updates the channel status to active in ledgerProviders
 func ResumeChannel(rootFSPath, ledgerID string) error {
+	logger.Debugf("ResumeChannel() started...") //TODO: delete this
 	if err := pauseOrResumeChannel(rootFSPath, ledgerID, msgs.Status_ACTIVE); err != nil {
 		return err
 	}

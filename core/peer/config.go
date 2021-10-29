@@ -232,7 +232,7 @@ func (c *Config) load() error {
 	if err != nil {
 		return err
 	}
-
+	logger.Debugf("peer loading started...") //TODO: delete this
 	configDir := filepath.Dir(viper.ConfigFileUsed())
 
 	c.PeerAddress = peerAddress
@@ -273,7 +273,7 @@ func (c *Config) load() error {
 	if viper.IsSet("peer.keepalive.deliveryClient.timeout") {
 		c.DeliverClientKeepaliveOptions.ClientTimeout = viper.GetDuration("peer.keepalive.deliveryClient.timeout")
 	}
-
+	logger.Debugf("docker parameters initializing...") //TODO: delete this
 	c.GatewayOptions = gatewayconfig.GetOptions(viper.GetViper())
 
 	c.VMEndpoint = viper.GetString("vm.endpoint")
@@ -288,12 +288,15 @@ func (c *Config) load() error {
 	c.ChaincodePull = viper.GetBool("chaincode.pull")
 	var externalBuilders []ExternalBuilder
 
+	logger.Debugf("unmarshalling key chaincode.externalBuilders...") //TODO: delete this
+
 	err = viper.UnmarshalKey("chaincode.externalBuilders", &externalBuilders, viper.DecodeHook(viperutil.YamlStringToStructHook(externalBuilders)))
 	if err != nil {
 		return err
 	}
 
 	c.ExternalBuilders = externalBuilders
+	logger.Debugf("before for loop of ExternalBuilders: %+v", c.ExternalBuilders) //TODO: delete this
 	for builderIndex, builder := range c.ExternalBuilders {
 		if builder.Path == "" {
 			return fmt.Errorf("invalid external builder configuration, path attribute missing in one or more builders")
@@ -311,7 +314,7 @@ func (c *Config) load() error {
 	c.OperationsTLSCertFile = config.GetPath("operations.tls.cert.file")
 	c.OperationsTLSKeyFile = config.GetPath("operations.tls.key.file")
 	c.OperationsTLSClientAuthRequired = viper.GetBool("operations.tls.clientAuthRequired")
-
+	logger.Debugf("before for loop of viper.GetStringSlice(operations.tls.clientRootCAs.files)") //TODO: delete this
 	for _, rca := range viper.GetStringSlice("operations.tls.clientRootCAs.files") {
 		c.OperationsTLSClientRootCAs = append(c.OperationsTLSClientRootCAs, config.TranslatePath(configDir, rca))
 	}
@@ -325,6 +328,7 @@ func (c *Config) load() error {
 	c.DockerCert = config.GetPath("vm.docker.tls.cert.file")
 	c.DockerKey = config.GetPath("vm.docker.tls.key.file")
 	c.DockerCA = config.GetPath("vm.docker.tls.ca.file")
+	logger.Debugf("peer successfully loaded") //TODO: delete this
 
 	return nil
 }
@@ -381,27 +385,34 @@ func getLocalIP() (string, error) {
 
 // GetServerConfig returns the gRPC server configuration for the peer
 func GetServerConfig() (comm.ServerConfig, error) {
+	logger.Debugf("Getting peer server config...") //TODO: delete this
 	serverConfig := comm.ServerConfig{
 		ConnectionTimeout: viper.GetDuration("peer.connectiontimeout"),
 		SecOpts: comm.SecureOptions{
 			UseTLS: viper.GetBool("peer.tls.enabled"),
 		},
 	}
+	logger.Debugf("if-1...")                                                        //TODO: delete this
+	logger.Debugf("serverConfig.SecOpts.UseTLS = %+v", serverConfig.SecOpts.UseTLS) //TODO: delete this
 	if serverConfig.SecOpts.UseTLS {
 		// get the certs from the file system
+		logger.Debugf("reading key file %+v", config.GetPath("peer.tls.key.file")) //TODO: delete this
 		serverKey, err := ioutil.ReadFile(config.GetPath("peer.tls.key.file"))
 		if err != nil {
 			return serverConfig, fmt.Errorf("error loading TLS key (%s)", err)
 		}
+		logger.Debugf("reading cert file %+v", config.GetPath("peer.tls.cert.file"))
 		serverCert, err := ioutil.ReadFile(config.GetPath("peer.tls.cert.file"))
 		if err != nil {
 			return serverConfig, fmt.Errorf("error loading TLS certificate (%s)", err)
 		}
 		serverConfig.SecOpts.Certificate = serverCert
 		serverConfig.SecOpts.Key = serverKey
+		logger.Debugf("Getting bool for peer.tls.clientAuthRequired: %+v", viper.GetBool("peer.tls.clientAuthRequired"))
 		serverConfig.SecOpts.RequireClientCert = viper.GetBool("peer.tls.clientAuthRequired")
 		if serverConfig.SecOpts.RequireClientCert {
 			var clientRoots [][]byte
+			logger.Debugf("StringSlice: peer.tls.clientRootCAs.files: %+v", viper.GetStringSlice("peer.tls.clientRootCAs.files"))
 			for _, file := range viper.GetStringSlice("peer.tls.clientRootCAs.files") {
 				clientRoot, err := ioutil.ReadFile(
 					config.TranslatePath(filepath.Dir(viper.ConfigFileUsed()), file))
@@ -414,6 +425,7 @@ func GetServerConfig() (comm.ServerConfig, error) {
 			serverConfig.SecOpts.ClientRootCAs = clientRoots
 		}
 		// check for root cert
+		logger.Debugf("if peer.tls.rootcert.file not empty. peer.tls.rootcert.file is %+v", config.GetPath("peer.tls.rootcert.file"))
 		if config.GetPath("peer.tls.rootcert.file") != "" {
 			rootCert, err := ioutil.ReadFile(config.GetPath("peer.tls.rootcert.file"))
 			if err != nil {
@@ -422,6 +434,8 @@ func GetServerConfig() (comm.ServerConfig, error) {
 			serverConfig.SecOpts.ServerRootCAs = [][]byte{rootCert}
 		}
 	}
+	logger.Debugf("if-1 finished") //TODO: delete this
+
 	// get the default keepalive options
 	serverConfig.KaOpts = comm.DefaultKeepaliveOptions
 	// check to see if interval is set for the env
@@ -436,6 +450,7 @@ func GetServerConfig() (comm.ServerConfig, error) {
 	if viper.IsSet("peer.keepalive.minInterval") {
 		serverConfig.KaOpts.ServerMinInterval = viper.GetDuration("peer.keepalive.minInterval")
 	}
+	logger.Debugf("if-2, if-3, if-4 finished") //TODO: delete this
 
 	serverConfig.MaxRecvMsgSize = comm.DefaultMaxRecvMsgSize
 	serverConfig.MaxSendMsgSize = comm.DefaultMaxSendMsgSize
@@ -446,6 +461,8 @@ func GetServerConfig() (comm.ServerConfig, error) {
 	if viper.IsSet("peer.maxSendMsgSize") {
 		serverConfig.MaxSendMsgSize = int(viper.GetInt32("peer.maxSendMsgSize"))
 	}
+	logger.Debugf("server config created sucessfully") //TODO: delete this
+
 	return serverConfig, nil
 }
 

@@ -198,6 +198,7 @@ func NewFileLock(filePath string) *FileLock {
 // functionality to acquire and release file lock as the leveldb
 // supports this for Windows, Solaris, and Unix.
 func (f *FileLock) Lock() error {
+	logger.Debugf("leveldb Lock started")
 	dbOpts := &opt.Options{}
 	var err error
 	var dirEmpty bool
@@ -215,7 +216,7 @@ func (f *FileLock) Lock() error {
 
 	// only mutate the lock db reference AFTER validating that the lock was held.
 	f.db = db
-
+	logger.Debugf("leveldb Lock successfully set")
 	return nil
 }
 
@@ -235,4 +236,6 @@ func (f *FileLock) Unlock() {
 		return
 	}
 	f.db = nil
+	logger.Debugf("leveldb successfully unlocked")
+
 }

@@ -15,6 +15,10 @@ func fileLockPath(rootFSPath string) string {
 	return filepath.Join(rootFSPath, "fileLock")
 }
 
+func rocksDBFileLockPath(rootFSPath string) string {
+	return filepath.Join(rootFSPath, "rocksDBFileLock")
+}
+
 // LedgerProviderPath returns the absolute path of ledgerprovider
 func LedgerProviderPath(rootFSPath string) string {
 	return filepath.Join(rootFSPath, "ledgerProvider")
@@ -30,7 +34,7 @@ func PvtDataStorePath(rootFSPath string) string {
 	return filepath.Join(rootFSPath, "pvtdataStore")
 }
 
-// StateDBPath returns the absolute path of state level DB
+// StateDBPath returns the absolute path of state rocks DB
 func StateDBPath(rootFSPath string) string {
 	return filepath.Join(rootFSPath, "stateRocksDB")
 }
