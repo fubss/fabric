@@ -27,6 +27,7 @@ import (
 // invoked while the peer is shut down.
 func UnjoinChannel(config *ledger.Config, ledgerID string) error {
 	// Ensure the routine is invoked while the peer is down.
+	logger.Debugf("UnjoinChannel() was called... if you use RocksDB errors might happen") //TODO: add logic if RocksDB is used as state db
 	fileLock := leveldbhelper.NewFileLock(fileLockPath(config.RootFSPath))
 	if err := fileLock.Lock(); err != nil {
 		return errors.WithMessage(err, "as another peer node command is executing,"+

@@ -15,6 +15,7 @@ import (
 // RollbackKVLedger rollbacks a ledger to a specified block number
 func RollbackKVLedger(rootFSPath, ledgerID string, blockNum uint64) error {
 	fileLockPath := fileLockPath(rootFSPath)
+	logger.Debugf("RollbackKVLedger() was called... if you use RocksDB errors might happen") //TODO: add logic if RocksDB is used as state db
 	fileLock := leveldbhelper.NewFileLock(fileLockPath)
 	if err := fileLock.Lock(); err != nil {
 		return errors.Wrap(err, "as another peer node command is executing,"+

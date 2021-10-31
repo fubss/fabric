@@ -89,6 +89,7 @@ func NewStoreProvider(path string) (StoreProvider, error) {
 	// Ensure the routine is invoked while the peer is down.
 	lockPath := filepath.Join(filepath.Dir(path), transientStorageLockName)
 	lock := leveldbhelper.NewFileLock(lockPath)
+	logger.Debugf("New transient store leveldb locking...") //TODO: delete this
 	if err := lock.Lock(); err != nil {
 		return nil, errors.WithMessage(err, "as another peer node command is executing,"+
 			" wait for that command to complete its execution or terminate it before retrying")
@@ -141,6 +142,7 @@ func (provider *storeProvider) Close() {
 	}
 	if provider.fileLock != nil {
 		provider.fileLock.Unlock()
+		logger.Debugf("transient store locking was released sucessfully") //TODO: delete this
 	}
 }
 

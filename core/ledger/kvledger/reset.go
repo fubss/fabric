@@ -14,6 +14,7 @@ import (
 
 // ResetAllKVLedgers resets all ledger to the genesis block.
 func ResetAllKVLedgers(rootFSPath string) error {
+	logger.Debugf("ResetAllKVLedgers() was called... if you use RocksDB as state db errors might happend") //TODO: add logic if rocksdb is used as state db
 	fileLockPath := fileLockPath(rootFSPath)
 	fileLock := leveldbhelper.NewFileLock(fileLockPath)
 	if err := fileLock.Lock(); err != nil {

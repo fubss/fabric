@@ -23,7 +23,7 @@ func PauseChannel(rootFSPath, ledgerID string) error {
 
 // ResumeChannel updates the channel status to active in ledgerProviders
 func ResumeChannel(rootFSPath, ledgerID string) error {
-	logger.Debugf("ResumeChannel() started...") //TODO: delete this
+	logger.Debugf("ResumeChannel() started... If you are using RocksDB errors migh happen") //TODO: delete this
 	if err := pauseOrResumeChannel(rootFSPath, ledgerID, msgs.Status_ACTIVE); err != nil {
 		return err
 	}
@@ -32,6 +32,8 @@ func ResumeChannel(rootFSPath, ledgerID string) error {
 }
 
 func pauseOrResumeChannel(rootFSPath, ledgerID string, status msgs.Status) error {
+	//TODO: we should change this part if want to use other state database (e.g. RocksDB)
+	logger.Debugf("pauseOrResumeChannel() was called... if you use RocksDB errors might happen") //TODO: add logic if RocksDB is used as state db
 	fileLock := leveldbhelper.NewFileLock(fileLockPath(rootFSPath))
 	if err := fileLock.Lock(); err != nil {
 		return errors.Wrap(err, "as another peer node command is executing,"+

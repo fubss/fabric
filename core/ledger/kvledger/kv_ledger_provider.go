@@ -590,6 +590,7 @@ func (s *idStore) checkUpgradeEligibility() (bool, error) {
 }
 
 func (s *idStore) upgradeFormat() error {
+	logger.Debugf("upgradeFormat() was called... (using leveldb batching!!!!)")
 	eligible, err := s.checkUpgradeEligibility()
 	if err != nil {
 		return err

@@ -199,7 +199,7 @@ func (f *FileLock) Lock() error {
 		panic(fmt.Sprintf("Error creating dir if missing: %s", err))
 	}
 	logger.Debugf("while Lock dirEmpty = %+v", dirEmpty)
-	dbOpts.SetCreateIfMissing(!dirEmpty)
+	dbOpts.SetCreateIfMissing(dirEmpty)
 	if db, err = rocksdb.OpenDb(dbOpts, f.filePath); err != nil {
 		panic(fmt.Sprintf("Error opening rocksdb: %s", err))
 	}

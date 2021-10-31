@@ -19,6 +19,7 @@ import (
 // if the format is already the latest version. Otherwise, it drops
 // ledger databases and upgrades the idStore format.
 func UpgradeDBs(config *ledger.Config) error {
+	logger.Debugf("UpgradeDBs() was called... if you use RocksDB errors might happen") //TODO: add logic if RocksDB is used as state db
 	rootFSPath := config.RootFSPath
 	fileLockPath := fileLockPath(rootFSPath)
 	fileLock := leveldbhelper.NewFileLock(fileLockPath)
