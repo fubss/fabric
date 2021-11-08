@@ -26,6 +26,7 @@ func (n *collElgNotifier) Name() string {
 }
 
 func (n *collElgNotifier) Initialize(ledgerID string, qe ledger.SimpleQueryExecutor) error {
+	logger.Debugf("collElgNotifier.Initialize (noop)") //TODO: delete this
 	// Noop
 	return nil
 }

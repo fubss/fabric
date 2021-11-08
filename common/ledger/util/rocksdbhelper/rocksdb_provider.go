@@ -25,13 +25,6 @@ var (
 	formatVersionKey = []byte{'f'} // a single key in db whose value indicates the version of the data format
 )
 
-type Provider struct {
-	db *DB
-
-	mux       sync.Mutex
-	dbHandles map[string]*DBHandle
-}
-
 // DBHandle is an handle to a named db
 type DBHandle struct {
 	dbName    string
@@ -54,6 +47,14 @@ type Conf struct {
 	ExpectedFormat string
 }
 
+// Provider enables to use a single rocksdb as multiple logical leveldbs
+type Provider struct {
+	db *DB
+
+	mux       sync.Mutex
+	dbHandles map[string]*DBHandle
+}
+
 // NewProvider constructs a Provider
 func NewProvider(conf *Conf) (*Provider, error) {
 	logger.Debugf("NewProvider intialization...")
@@ -74,6 +75,7 @@ func openDBAndCheckFormat(conf *Conf) (d *DB, e error) {
 
 	defer func() {
 		if e != nil {
+			logger.Infof("Closing RocksDB...")
 			db.Close()
 		}
 	}()
@@ -87,7 +89,7 @@ func openDBAndCheckFormat(conf *Conf) (d *DB, e error) {
 	if err != nil {
 		return nil, err
 	}
-	logger.Infof("rocks db IsEmpty()=true") //TODO: delete this
+	logger.Infof("rocks db IsEmpty()=%t", dbEmpty) //TODO: delete this
 
 	if dbEmpty && conf.ExpectedFormat != "" {
 		logger.Infof("DB is empty Setting db format as %s", conf.ExpectedFormat)
@@ -115,6 +117,12 @@ func openDBAndCheckFormat(conf *Conf) (d *DB, e error) {
 	}
 	logger.Debug("format is latest, nothing to do")
 	return db, nil
+}
+
+// GetDataFormat returns the format of the data
+func (p *Provider) GetDataFormat() (string, error) {
+	f, err := p.GetDBHandle(internalDBName).Get(formatVersionKey)
+	return string(f), err
 }
 
 // GetDBHandle returns a handle to a named db
@@ -156,23 +164,9 @@ func (h *DBHandle) Put(key []byte, value []byte, sync bool) error {
 	return h.db.Put(constructLevelKey(h.dbName, key), value, sync)
 }
 
-// GetIterator gets an handle to iterator. The iterator should be released after the use.
-// The resultset contains all the keys that are present in the db between the startKey (inclusive) and the endKey (exclusive).
-// A nil startKey represents the first available key and a nil endKey represent a logical key after the last available key
-func (h *DBHandle) GetIterator(startKey []byte, endKey []byte) (Iterator, error) {
-	sKey := constructLevelKey(h.dbName, startKey)
-	eKey := constructLevelKey(h.dbName, endKey)
-	if endKey == nil {
-		// replace the last byte 'dbNameKeySep' by 'lastKeyIndicator'
-		eKey[len(eKey)-1] = lastKeyIndicator
-	}
-	logger.Debugf("Getting iterator for range [%#v] - [%#v]", sKey, eKey)
-	itr := h.db.GetIterator(sKey, eKey)
-	if err := itr.Err(); err != nil {
-		itr.Close()
-		return Iterator{}, errors.Wrapf(err, "internal rocksdb error while obtaining db iterator")
-	}
-	return Iterator{h.dbName, itr}, nil
+// Delete deletes the given key
+func (h *DBHandle) Delete(key []byte, sync bool) error {
+	return h.db.Delete(constructLevelKey(h.dbName, key), sync)
 }
 
 // DeleteAll deletes all the keys that belong to the channel (dbName).
@@ -217,6 +211,7 @@ func (h *DBHandle) deleteAll() error {
 
 // IsEmpty returns true if no data exists for the DBHandle
 func (h *DBHandle) IsEmpty() (bool, error) {
+	logger.Info("IsEmpty(), getting Iterator with nil start&end keys...")
 	itr, err := h.GetIterator(nil, nil)
 	if err != nil {
 		return false, err
@@ -224,7 +219,7 @@ func (h *DBHandle) IsEmpty() (bool, error) {
 	defer itr.Close()
 
 	if err := itr.Err(); err != nil {
-		return false, errors.WithMessagef(itr.Err(), "internal leveldb error while obtaining next entry from iterator")
+		return false, errors.WithMessagef(itr.Err(), "internal rocksdb error while obtaining next entry from iterator")
 	}
 
 	return !itr.Valid(), nil
@@ -232,9 +227,10 @@ func (h *DBHandle) IsEmpty() (bool, error) {
 
 // NewUpdateBatch returns a new UpdateBatch that can be used to update the db
 func (h *DBHandle) NewUpdateBatch() *UpdateBatch {
+	wb := rocksdb.NewWriteBatch()
 	return &UpdateBatch{
 		dbName:     h.dbName,
-		WriteBatch: &rocksdb.WriteBatch{},
+		WriteBatch: wb,
 	}
 }
 
@@ -243,10 +239,40 @@ func (h *DBHandle) WriteBatch(batch *UpdateBatch, sync bool) error {
 	if batch == nil || batch.Count() == 0 {
 		return nil
 	}
+	logger.Infof("WriteBatch()..., sync=[%+v]", sync)
 	if err := h.db.WriteBatch(batch.WriteBatch, sync); err != nil {
 		return err
 	}
 	return nil
+}
+
+// GetIterator gets an handle to iterator. The iterator should be released after the use.
+// The resultset contains all the keys that are present in the db between the startKey (inclusive) and the endKey (exclusive).
+// A nil startKey represents the first available key and a nil endKey represent a logical key after the last available key
+func (h *DBHandle) GetIterator(startKey []byte, endKey []byte) (Iterator, error) {
+	var eKey []byte
+	sKey := constructLevelKey(h.dbName, startKey)
+	if endKey == nil {
+		// replace the last byte 'dbNameKeySep' by 'lastKeyIndicator'
+		//eKey[len(eKey)-1] = lastKeyIndicator
+		//eKey = []byte("")
+		logger.Info("endKey is nil")
+	} else {
+		logger.Info("endKey is not nil")
+		eKey = constructLevelKey(h.dbName, endKey)
+	}
+	logger.Infof("Constructing iterator with sKey=[%s(%#v)] and eKey=[%s(%#v)]", sKey, sKey, eKey, eKey)
+	itr, err := h.db.GetIterator(sKey, eKey)
+	if err != nil {
+		logger.Infof("itr.Err()=[%+v]. Closing iterator...", itr.Err())
+		return Iterator{}, err
+	}
+	if itr.Valid() {
+		logger.Infof("itr is Valid")
+	} else {
+		logger.Infof("itr is not Valid")
+	}
+	return Iterator{h.dbName, itr}, nil
 }
 
 // Close closes the DBHandle after its db data have been deleted
@@ -262,13 +288,59 @@ type UpdateBatch struct {
 	dbName string
 }
 
+// Put adds a KV
+func (b *UpdateBatch) Put(key []byte, value []byte) {
+	if value == nil {
+		panic("Nil value not allowed")
+	}
+	b.WriteBatch.Put(constructLevelKey(b.dbName, key), value)
+}
+
+// Delete deletes a Key and associated value
+func (b *UpdateBatch) Delete(key []byte) {
+	b.WriteBatch.Delete(constructLevelKey(b.dbName, key))
+}
+
 // Iterator extends actual rocksdb iterator
 type Iterator struct {
 	dbName string
 	*rocksdb.Iterator
 }
 
+// Key wraps actual leveldb iterator method
+func (itr *Iterator) Key() []byte {
+	return retrieveAppKey(itr.Iterator.Key().Data())
+}
+
+// Key wraps actual leveldb iterator method
+func (itr *Iterator) Value() []byte {
+	return itr.Iterator.Value().Data()
+}
+
+// FreeKey wraps actual freeing the Key slice data
+func (itr *Iterator) FreeKey() {
+	itr.Iterator.Key().Free()
+}
+
+// FreeValue wraps actual freeing the Value slice data
+func (itr *Iterator) FreeValue() {
+	itr.Iterator.Value().Free()
+}
+
+// Seek moves the iterator to the first key/value pair
+// whose key is greater than or equal to the given key.
+// It returns whether such pair exist.
+/*func (itr *Iterator) Seek(key []byte) {
+	levelKey := constructLevelKey(itr.dbName, key)
+	itr.Iterator.Seek(levelKey)
+	return
+}*/
+
 //TODO: should we make the mechanism differ from level db one?
 func constructLevelKey(dbName string, key []byte) []byte {
 	return append(append([]byte(dbName), dbNameKeySep...), key...)
+}
+
+func retrieveAppKey(levelKey []byte) []byte {
+	return bytes.SplitN(levelKey, dbNameKeySep, 2)[1]
 }

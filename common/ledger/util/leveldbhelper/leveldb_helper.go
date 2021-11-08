@@ -104,6 +104,7 @@ func (dbInst *DB) Close() {
 
 // Get returns the value for the given key
 func (dbInst *DB) Get(key []byte) ([]byte, error) {
+	logger.Infof("Getting key [%s] from LevelDB...", key) //TODO remove this
 	dbInst.mutex.RLock()
 	defer dbInst.mutex.RUnlock()
 	value, err := dbInst.db.Get(key, dbInst.readOpts)
@@ -154,6 +155,7 @@ func (dbInst *DB) Delete(key []byte, sync bool) error {
 // The resultset contains all the keys that are present in the db between the startKey (inclusive) and the endKey (exclusive).
 // A nil startKey represents the first available key and a nil endKey represent a logical key after the last available key
 func (dbInst *DB) GetIterator(startKey []byte, endKey []byte) iterator.Iterator {
+	logger.Infof("Getting new Iterator for start key: [%s (%+v)] and end key: [%s(%+v)]", startKey, startKey, endKey, endKey) //TODO: delete this
 	dbInst.mutex.RLock()
 	defer dbInst.mutex.RUnlock()
 	return dbInst.db.NewIterator(&goleveldbutil.Range{Start: startKey, Limit: endKey}, dbInst.readOpts)
@@ -161,6 +163,7 @@ func (dbInst *DB) GetIterator(startKey []byte, endKey []byte) iterator.Iterator 
 
 // WriteBatch writes a batch
 func (dbInst *DB) WriteBatch(batch *leveldb.Batch, sync bool) error {
+	logger.Infof("WritingBatch.Len()=[%d]", batch.Len()) //TODO: delete this
 	dbInst.mutex.RLock()
 	defer dbInst.mutex.RUnlock()
 	wo := dbInst.writeOptsNoSync

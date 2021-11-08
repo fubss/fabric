@@ -22,6 +22,7 @@ func (listener *KVLedgerLSCCStateListener) Name() string {
 }
 
 func (listener *KVLedgerLSCCStateListener) Initialize(ledgerID string, qe ledger.SimpleQueryExecutor) error {
+	logger.Debugf("KVLedgerLSCCStateListener.Initialize (noop)") //TODO: delete this
 	// Noop
 	return nil
 }

@@ -190,6 +190,7 @@ func (c *Cache) Name() string {
 // with respect to 'Update', but, the error handling is quite different and attempting
 // to factor out the common pieces results in a net total of more code.
 func (c *Cache) Initialize(channelID string, qe ledger.SimpleQueryExecutor) error {
+	logger.Debugf("cache Initializing...")
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 

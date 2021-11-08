@@ -55,6 +55,7 @@ func (m *Mgr) Name() string {
 
 // Initialize implements function from the interface ledger.StateListener
 func (m *Mgr) Initialize(ledgerID string, qe ledger.SimpleQueryExecutor) error {
+	logger.Debugf("Mgr.Initialize (noop)") //TODO: delete this
 	// Noop
 	return nil
 }

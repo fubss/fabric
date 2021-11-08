@@ -67,7 +67,7 @@ func (dbInst *DB) Open() {
 	if dbInst.db, err = rocksdb.OpenDb(dbOpts, dbPath); err != nil {
 		panic(fmt.Sprintf("Error opening rocksdb: %s", err))
 	}
-	logger.Debugf("DB was successfully opened")
+	logger.Infof("DB was successfully opened in path: [ %s ]", dbPath)
 	dbInst.dbState = opened
 }
 
@@ -92,12 +92,14 @@ func (dbInst *DB) Close() {
 	if dbInst.dbState == closed {
 		return
 	}
+	logger.Infof("Closing db...")
 	dbInst.db.Close() //TODO: should we check if db closed here?
 	dbInst.dbState = closed
 }
 
 // Get returns the value for the given key
 func (dbInst *DB) Get(key []byte) ([]byte, error) {
+	logger.Infof("Getting key [%s] from RocksDB...", key)
 	dbInst.mutex.RLock()
 	defer dbInst.mutex.RUnlock()
 	value, err := dbInst.db.Get(dbInst.readOpts, key)
@@ -105,6 +107,7 @@ func (dbInst *DB) Get(key []byte) ([]byte, error) {
 		logger.Errorf("Error retrieving rocksdb key [%#v]: %s", key, err)
 		return nil, errors.Wrapf(err, "error retrieving rocksdb key [%#v]", key)
 	}
+	logger.Infof("got data [%s]", value.Data())
 	return value.Data(), nil
 }
 
@@ -143,17 +146,45 @@ func (dbInst *DB) Delete(key []byte, sync bool) error {
 // GetIterator returns an iterator over key-value store. The iterator should be closed after the use.
 // The resultset contains all the keys that are present in the db between the startKey (inclusive) and the endKey (exclusive).
 // A nil startKey represents the first available key and a nil endKey represent a logical key after the last available key
-func (dbInst *DB) GetIterator(startKey []byte, endKey []byte) *rocksdb.Iterator {
-	dbInst.mutex.RLock()
-	defer dbInst.mutex.RUnlock()
+func (dbInst *DB) GetIterator(startKey []byte, endKey []byte) (*rocksdb.Iterator, error) {
+	logger.Infof("Getting new RocksDB Iterator... for start key: [%s (%#v)] and end key: [%s (%#v)]", startKey, startKey, endKey, endKey) //TODO: delete this
+	if dbInst.dbState == closed {
+		err := errors.New("error while obtaining db iterator: rocksdb: closed")
+		logger.Infof("itr.Err()=[%+v]. Impossible to create an iterator", err)
+		return nil, err
+	}
 	ro := dbInst.readOpts
-	ro.SetIterateLowerBound(startKey)
-	ro.SetIterateUpperBound(endKey)
-	return dbInst.db.NewIterator(ro)
+	//ro := rocksdb.NewDefaultReadOptions()
+	// docs says that If you want to avoid disturbing your live traffic
+	// while doing the bulk read, be sure to call SetFillCache(false)
+	// on the ReadOptions you use when creating the Iterator.
+	ro.SetFillCache(false)
+	///	dbInst.mutex.RUnlock()
+	//ro.SetIterateLowerBound(startKey)
+	if endKey != nil {
+		logger.Infof("if-case: endKey!=nil, UpperBound set")
+		ro.SetIterateUpperBound(endKey)
+	} else {
+		logger.Info("endKey is nil, no UpperBound set")
+	}
+	ni := dbInst.db.NewIterator(ro)
+	if ni.Valid() {
+		logger.Infof("ni is Valid, err=[%+v]", ni.Err())
+	} else {
+		logger.Infof("ni is not Valid, err=[%+v]", ni.Err())
+	}
+	//if startKey != nil {
+	ni.Seek(startKey) //TODO: delete THIS_COMMENT: will point to the second or equal iterator key?
+	logger.Infof("Seeked startKey=[%s]", ni.Key().Data())
+	//ni.Prev() //we have to make step back
+	//logger.Infof("Previous startKey=[%s]", ni.Key().Data())
+	//logger.Infof("Seeked firstKey in DB=[%s]", ni.Key().Data())
+	return ni, nil
 }
 
 // WriteBatch writes a batch
 func (dbInst *DB) WriteBatch(batch *rocksdb.WriteBatch, sync bool) error {
+	logger.Infof("WritingBatch.Count()=[%d]", batch.Count()) //TODO: delete this
 	dbInst.mutex.RLock()
 	defer dbInst.mutex.RUnlock()
 	wo := dbInst.writeOptsNoSync

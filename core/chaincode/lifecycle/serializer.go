@@ -449,6 +449,7 @@ func (s *Serializer) DeserializeFieldAsInt64(namespace, name, field string, stat
 }
 
 func (s *Serializer) DeserializeAllMetadata(namespace string, state RangeableState) (map[string]*lb.StateMetadata, error) {
+	logger.Debugf("Serializer.DeserializeAllMetadata()...")
 	prefix := fmt.Sprintf("%s/%s/", namespace, MetadataInfix)
 	kvs, err := state.GetStateRange(prefix)
 	if err != nil {

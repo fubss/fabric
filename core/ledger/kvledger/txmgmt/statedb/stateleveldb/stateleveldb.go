@@ -50,6 +50,7 @@ func NewVersionedDBProvider(dbPath string) (*VersionedDBProvider, error) {
 
 // GetDBHandle gets the handle to a named database
 func (provider *VersionedDBProvider) GetDBHandle(dbName string, namespaceProvider statedb.NamespaceProvider) (statedb.VersionedDB, error) {
+	logger.Debugf("GetDBHandle()...") //TODO: delete this
 	return newVersionedDB(provider.dbProvider.GetDBHandle(dbName), dbName), nil
 }
 
@@ -159,6 +160,7 @@ func (vdb *versionedDB) GetStateRangeScanIterator(namespace string, startKey str
 
 // GetStateRangeScanIteratorWithPagination implements method in VersionedDB interface
 func (vdb *versionedDB) GetStateRangeScanIteratorWithPagination(namespace string, startKey string, endKey string, pageSize int32) (statedb.QueryResultsIterator, error) {
+	logger.Debugf("GetStateRangeScanIteratorWithPagination()...") //TODO:delete this
 	dataStartKey := EncodeDataKey(namespace, startKey)
 	dataEndKey := EncodeDataKey(namespace, endKey)
 	if endKey == "" {
@@ -198,6 +200,7 @@ func (vdb *versionedDB) ApplyUpdates(batch *statedb.UpdateBatch, height *version
 				if err != nil {
 					return err
 				}
+				logger.Infof("dbBatch.Put(dataKey=[%#v (%s)], encodedVal=[%#v (%s)])", dataKey, dataKey, encodedVal, encodedVal)
 				dbBatch.Put(dataKey, encodedVal)
 			}
 		}
@@ -307,10 +310,12 @@ func newKVScanner(namespace string, dbItr iterator.Iterator, requestedLimit int3
 }
 
 func (scanner *kvScanner) Next() (*statedb.VersionedKV, error) {
+	logger.Infof("kvScanner.Next()...") //TODO: delete this
 	if scanner.requestedLimit > 0 && scanner.totalRecordsReturned >= scanner.requestedLimit {
 		return nil, nil
 	}
 	if !scanner.dbItr.Next() {
+		logger.Infof("if-case: Next returned false")
 		return nil, nil
 	}
 
@@ -320,6 +325,7 @@ func (scanner *kvScanner) Next() (*statedb.VersionedKV, error) {
 	copy(dbValCopy, dbVal)
 	_, key := DecodeDataKey(dbKey)
 	vv, err := DecodeValue(dbValCopy)
+	logger.Infof("after iterator.Next(): dbKey=[%s], vv=[%s], dbVal=[%s]", dbKey, vv, dbValCopy)
 	if err != nil {
 		return nil, err
 	}

@@ -584,7 +584,7 @@ func testConfig(t *testing.T) (conf *ledger.Config, cleanup func()) {
 	require.NoError(t, err, "Failed to create test ledger directory")
 	conf = &ledger.Config{
 		RootFSPath:    path,
-		StateDBConfig: &ledger.StateDBConfig{},
+		StateDBConfig: &ledger.StateDBConfig{StateDatabase: "grocksdb"},
 		PrivateDataConfig: &ledger.PrivateDataConfig{
 			MaxBatchSize:                        5000,
 			BatchesInterval:                     1000,

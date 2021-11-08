@@ -402,6 +402,7 @@ type resultsItr struct {
 func newResultsItr(ns string, startKey string, endKey string, pageSize int32,
 	db statedb.VersionedDB, rwsetBuilder *rwsetutil.RWSetBuilder, enableHashing bool,
 	maxDegree uint32, hashFunc rwsetutil.HashFunc) (*resultsItr, error) {
+	logger.Debugf("newResultsItr()...")
 	var err error
 	var dbItr statedb.ResultsIterator
 	if pageSize == 0 {

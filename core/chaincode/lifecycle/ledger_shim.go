@@ -24,6 +24,7 @@ type StateIterator interface {
 // StateIteratorToMap takes an iterator, and iterates over the entire thing, encoding the KVs
 // into a map, and then closes it.
 func StateIteratorToMap(itr StateIterator) (map[string][]byte, error) {
+	logger.Debugf("StateIteratorToMap...")
 	defer itr.Close()
 	result := map[string][]byte{}
 	for {
@@ -47,6 +48,7 @@ type ChaincodePublicLedgerShim struct {
 // GetStateRange performs a range query for keys beginning with a particular prefix, and
 // returns it as a map. This function assumes that keys contain only ascii chars from \x00 to \x7e.
 func (cls *ChaincodePublicLedgerShim) GetStateRange(prefix string) (map[string][]byte, error) {
+	logger.Debugf("ChaincodePublicLedgerShim.GetStateRange") //TODO: delete this
 	itr, err := cls.GetStateByRange(prefix, prefix+"\x7f")
 	if err != nil {
 		return nil, errors.WithMessage(err, "could not get state iterator")
@@ -79,6 +81,7 @@ type ChaincodePrivateLedgerShim struct {
 // GetStateRange performs a range query in the configured collection for all keys beginning
 // with a particular prefix.  This function assumes that keys contain only ascii chars from \x00 to \x7e.
 func (cls *ChaincodePrivateLedgerShim) GetStateRange(prefix string) (map[string][]byte, error) {
+	logger.Debugf("ChaincodePrivateLedgerShim.GetStateRange") //TODO: remove this
 	itr, err := cls.Stub.GetPrivateDataByRange(cls.Collection, prefix, prefix+"\x7f")
 	if err != nil {
 		return nil, errors.WithMessage(err, "could not get state iterator")
@@ -122,6 +125,7 @@ func (sqes *SimpleQueryExecutorShim) GetState(key string) ([]byte, error) {
 }
 
 func (sqes *SimpleQueryExecutorShim) GetStateRange(prefix string) (map[string][]byte, error) {
+	logger.Debugf("SimpleQueryExecutorShim.GetStateRange") //TODO: delete this
 	itr, err := sqes.SimpleQueryExecutor.GetStateRangeScanIterator(sqes.Namespace, prefix, prefix+"\x7f")
 	if err != nil {
 		return nil, errors.WithMessage(err, "could not get state iterator")
