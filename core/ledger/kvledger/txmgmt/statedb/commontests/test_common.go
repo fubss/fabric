@@ -233,11 +233,11 @@ func TestIterator(t *testing.T, dbProvider statedb.VersionedDBProvider) {
 	batch.Put("ns3", "key7", []byte("value7"), version.NewHeight(1, 7))
 	savePoint := version.NewHeight(2, 5)
 	require.NoError(t, db.ApplyUpdates(batch, savePoint))
-	//itr1, _ := db.GetStateRangeScanIterator("ns1", "key1", "")
-	//testItr(t, itr1, []string{"key1", "key2", "key3", "key4"})
+	itr1, _ := db.GetStateRangeScanIterator("ns1", "key1", "")
+	testItr(t, itr1, []string{"key1", "key2", "key3", "key4"})
 
-	//itr2, _ := db.GetStateRangeScanIterator("ns1", "key2", "key3")
-	//testItr(t, itr2, []string{"key2"})
+	itr2, _ := db.GetStateRangeScanIterator("ns1", "key2", "key3")
+	testItr(t, itr2, []string{"key2"})
 
 	itr3, _ := db.GetStateRangeScanIterator("ns1", "", "")
 	testItr(t, itr3, []string{"key1", "key2", "key3", "key4"})
