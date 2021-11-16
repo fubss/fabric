@@ -37,7 +37,7 @@ func TestDeletes(t *testing.T) {
 
 func TestIterator(t *testing.T) {
 	env := NewTestVDBEnv(t)
-	//defer env.Cleanup()
+	defer env.Cleanup()
 	commontests.TestIterator(t, env.DBProvider)
 	t.Run("test-iter-error-path", func(t *testing.T) {
 		db, err := env.DBProvider.GetDBHandle("testiterator", nil)

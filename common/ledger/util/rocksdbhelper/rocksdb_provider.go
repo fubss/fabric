@@ -253,13 +253,16 @@ func (h *DBHandle) GetIterator(startKey []byte, endKey []byte) (Iterator, error)
 	var eKey []byte
 	sKey := constructLevelKey(h.dbName, startKey)
 	if endKey == nil {
+		logger.Info("endKey is nil - TODO: IF-CASE HAS HAPPENED, WE SHOULD UNCOMMENT THIS SECTION")
+		//eKey = constructLevelKey(h.dbName, endKey)
+		//TODO: after checking all rocksdb tests it could be deleted
 		// replace the last byte 'dbNameKeySep' by 'lastKeyIndicator'
 		//eKey[len(eKey)-1] = lastKeyIndicator
-		//eKey = []byte("")
-		logger.Info("endKey is nil")
+		//logger.Infof("endKey is nil: eKey=[%s(%#v)]", eKey, eKey)
 	} else {
 		logger.Info("endKey is not nil")
 		eKey = constructLevelKey(h.dbName, endKey)
+
 	}
 	logger.Infof("Constructing iterator with sKey=[%s(%#v)] and eKey=[%s(%#v)]", sKey, sKey, eKey, eKey)
 	itr, err := h.db.GetIterator(sKey, eKey)

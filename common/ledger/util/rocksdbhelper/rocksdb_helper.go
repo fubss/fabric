@@ -35,7 +35,6 @@ type DB struct {
 // CreateDB constructs a `DB`
 func CreateDB(conf *Conf) *DB {
 	logger.Debugf("RocksDB constructing...")
-	readOpts := rocksdb.NewDefaultReadOptions()
 	writeOptsNoSync := rocksdb.NewDefaultWriteOptions()
 	writeOptsSync := rocksdb.NewDefaultWriteOptions()
 	writeOptsSync.SetSync(true)
@@ -43,7 +42,6 @@ func CreateDB(conf *Conf) *DB {
 	return &DB{
 		conf:            conf,
 		dbState:         closed,
-		readOpts:        readOpts,
 		writeOptsNoSync: writeOptsNoSync,
 		writeOptsSync:   writeOptsSync,
 	}
@@ -165,7 +163,9 @@ func (dbInst *DB) GetIterator(startKey []byte, endKey []byte) (*rocksdb.Iterator
 		logger.Infof("if-case: endKey!=nil, UpperBound set")
 		ro.SetIterateUpperBound(endKey)
 	} else {
-		logger.Info("endKey is nil, no UpperBound set")
+		logger.Info("endKey is nil, no UpperBound would be set in the previous variant")
+		ro.SetIterateUpperBound(endKey)
+
 	}
 	ni := dbInst.db.NewIterator(ro)
 	if ni.Valid() {

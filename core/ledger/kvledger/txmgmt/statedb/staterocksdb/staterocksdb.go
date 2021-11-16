@@ -158,9 +158,10 @@ func (vdb *versionedDB) GetStateRangeScanIterator(namespace string, startKey str
 func (vdb *versionedDB) GetStateRangeScanIteratorWithPagination(namespace string, startKey string, endKey string, pageSize int32) (statedb.QueryResultsIterator, error) {
 	logger.Infof("GetStateRangeScanIteratorWithPagination()...") //TODO: delete this
 	dataStartKey := kvdb.EncodeDataKey(namespace, startKey)
-	var dataEndKey []byte
+	dataEndKey := kvdb.EncodeDataKey(namespace, endKey)
 	if endKey == "" {
 		logger.Infof("endKey is empty string (but not nil)")
+		dataEndKey[len(dataEndKey)-1] = lastKeyIndicator
 	} else {
 		logger.Infof("endKey is not empty")
 		dataEndKey = kvdb.EncodeDataKey(namespace, endKey)
