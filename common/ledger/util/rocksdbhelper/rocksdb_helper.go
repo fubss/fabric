@@ -153,8 +153,8 @@ func (dbInst *DB) GetIterator(startKey []byte, endKey []byte) (*rocksdb.Iterator
 		logger.Infof("itr.Err()=[%+v]. Impossible to create an iterator", err)
 		return nil, err
 	}
-	ro := dbInst.readOpts
-	//ro := rocksdb.NewDefaultReadOptions()
+	//ro := dbInst.readOpts
+	ro := rocksdb.NewDefaultReadOptions()
 	// docs says that If you want to avoid disturbing your live traffic
 	// while doing the bulk read, be sure to call SetFillCache(false)
 	// on the ReadOptions you use when creating the Iterator.
