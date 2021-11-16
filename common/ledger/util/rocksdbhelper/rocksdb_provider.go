@@ -267,7 +267,7 @@ func (h *DBHandle) GetIterator(startKey []byte, endKey []byte) (Iterator, error)
 	logger.Infof("Constructing iterator with sKey=[%s(%#v)] and eKey=[%s(%#v)]", sKey, sKey, eKey, eKey)
 	itr, err := h.db.GetIterator(sKey, eKey)
 	if err != nil {
-		logger.Infof("itr.Err()=[%+v]. Closing iterator...", itr.Err())
+		logger.Infof("Error! Closing iterator...")
 		return Iterator{}, err
 	}
 	if itr.Valid() {
