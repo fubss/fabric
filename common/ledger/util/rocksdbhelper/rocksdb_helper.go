@@ -100,7 +100,7 @@ func (dbInst *DB) Get(key []byte) ([]byte, error) {
 	logger.Infof("Getting key [%s] from RocksDB...", key)
 	dbInst.mutex.RLock()
 	defer dbInst.mutex.RUnlock()
-	value, err := dbInst.db.Get(dbInst.readOpts, key)
+	value, err := dbInst.db.Get(rocksdb.NewDefaultReadOptions(), key)
 	if err != nil {
 		logger.Errorf("Error retrieving rocksdb key [%#v]: %s", key, err)
 		return nil, errors.Wrapf(err, "error retrieving rocksdb key [%#v]", key)
