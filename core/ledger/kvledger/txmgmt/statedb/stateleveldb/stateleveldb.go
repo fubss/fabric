@@ -312,6 +312,7 @@ func newKVScanner(namespace string, dbItr iterator.Iterator, requestedLimit int3
 func (scanner *kvScanner) Next() (*statedb.VersionedKV, error) {
 	logger.Infof("kvScanner.Next()...") //TODO: delete this
 	if scanner.requestedLimit > 0 && scanner.totalRecordsReturned >= scanner.requestedLimit {
+		logger.Infof("if-case scanner.requestedLimit=[%+v], scanner.totalRecordsReturned=[%+v]", scanner.requestedLimit, scanner.totalRecordsReturned) //TODO remove this
 		return nil, nil
 	}
 	if !scanner.dbItr.Next() {
@@ -325,7 +326,7 @@ func (scanner *kvScanner) Next() (*statedb.VersionedKV, error) {
 	copy(dbValCopy, dbVal)
 	_, key := DecodeDataKey(dbKey)
 	vv, err := DecodeValue(dbValCopy)
-	logger.Infof("after iterator.Next(): dbKey=[%s], vv=[%s], dbVal=[%s]", dbKey, vv, dbValCopy)
+	logger.Infof("after iterator.Next(): dbKey=[%s (%#v)], key=[%s], vv=[%s (%#v)], dbVal=[%s]", dbKey, dbKey, key, vv, vv, dbValCopy)
 	if err != nil {
 		return nil, err
 	}

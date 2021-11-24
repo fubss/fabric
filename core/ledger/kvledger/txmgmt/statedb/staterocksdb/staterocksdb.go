@@ -301,8 +301,8 @@ func newKVScanner(namespace string, dbItr rocksdbhelper.Iterator, requestedLimit
 
 func (scanner *kvScanner) Next() (*statedb.VersionedKV, error) {
 	logger.Infof("kvScanner.Next()...")
-	if scanner.requestedLimit > 0 && scanner.totalRecordsReturned >= scanner.requestedLimit { //TODO: remove this case if it not happened?
-		logger.Infof("if-case scanner.requestedLimit=[%+v], scanner.totalRecordsReturned=[%+v]", scanner.requestedLimit, scanner.totalRecordsReturned) //TODO remove this if-case?
+	if scanner.requestedLimit > 0 && scanner.totalRecordsReturned >= scanner.requestedLimit {
+		logger.Infof("if-case scanner.requestedLimit=[%+v], scanner.totalRecordsReturned=[%+v]", scanner.requestedLimit, scanner.totalRecordsReturned) //TODO remove this
 		return nil, nil
 	}
 	if !scanner.dbItr.Valid() {
@@ -327,7 +327,7 @@ func (scanner *kvScanner) Next() (*statedb.VersionedKV, error) {
 	copy(dbValCopy, dbVal) //TODO: maybe this is not enough fast way of copying slice?
 	_, key := kvdb.DecodeDataKey(dbKey)
 	vv, err := kvdb.DecodeValue(dbValCopy)
-	logger.Infof("after iterator.Next(): dbKey=[%s], vv=[%s], dbVal=[%s]", dbKey, vv, dbValCopy)
+	logger.Infof("after iterator.Next(): dbKey=[%s (%#v)], key=[%s], vv=[%s (%#v)], dbVal=[%s]", dbKey, dbKey, key, vv, vv, dbValCopy)
 
 	scanner.dbItr.FreeKey()   //we have to free key & value,
 	scanner.dbItr.FreeValue() //otherwise iterator works incorrect
@@ -363,6 +363,7 @@ func (scanner *kvScanner) Close() {
 
 func (scanner *kvScanner) GetBookmarkAndClose() string {
 	retval := ""
+	scanner.dbItr.Next()
 	if scanner.dbItr.Valid() {
 		dbKey := scanner.dbItr.Key()
 		_, key := kvdb.DecodeDataKey(dbKey)

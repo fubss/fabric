@@ -255,12 +255,12 @@ func (h *DBHandle) GetIterator(startKey []byte, endKey []byte) (Iterator, error)
 	if endKey == nil {
 		logger.Info("endKey is nil - TODO: IF-CASE HAS HAPPENED, WE SHOULD UNCOMMENT THIS SECTION")
 		//eKey = constructLevelKey(h.dbName, endKey)
-		//TODO: after checking all rocksdb tests it could be deleted
+		//TODO: after checking all rocksdb tests it should be deleted
 		// replace the last byte 'dbNameKeySep' by 'lastKeyIndicator'
 		//eKey[len(eKey)-1] = lastKeyIndicator
 		//logger.Infof("endKey is nil: eKey=[%s(%#v)]", eKey, eKey)
 	} else {
-		logger.Info("endKey is not nil")
+		logger.Infof("endKey is not nil: (%#v)", endKey)
 		eKey = constructLevelKey(h.dbName, endKey)
 
 	}
