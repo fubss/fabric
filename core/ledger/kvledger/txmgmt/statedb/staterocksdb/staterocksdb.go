@@ -243,6 +243,7 @@ func (vdb *versionedDB) GetLatestSavePoint() (*version.Height, error) {
 // to skip one or more namespaces from the returned results. The intended use of this iterator
 // is to generate the snapshot files for the stateleveldb
 func (vdb *versionedDB) GetFullScanIterator(skipNamespace func(string) bool) (statedb.FullScanIterator, error) {
+	logger.Infof("GetFullScanIterator()...")
 	return newFullDBScanner(vdb.db, skipNamespace)
 }
 
@@ -376,8 +377,9 @@ func (scanner *kvScanner) GetBookmarkAndClose() string {
 type fullDBScanner struct {
 	db *rocksdbhelper.DBHandle
 	//TODO add to kv-common-provider or interface
-	dbItr  rocksdbhelper.Iterator
-	toSkip func(namespace string) bool
+	dbItr          rocksdbhelper.Iterator
+	toSkip         func(namespace string) bool
+	firstKeyPassed bool
 }
 
 func newFullDBScanner(db *rocksdbhelper.DBHandle, skipNamespace func(namespace string) bool) (*fullDBScanner, error) {
@@ -386,28 +388,40 @@ func newFullDBScanner(db *rocksdbhelper.DBHandle, skipNamespace func(namespace s
 		return nil, err
 	}
 	return &fullDBScanner{
-			db:     db,
-			dbItr:  dbItr,
-			toSkip: skipNamespace,
+			db:             db,
+			dbItr:          dbItr,
+			toSkip:         skipNamespace,
+			firstKeyPassed: false,
 		},
 		nil
 }
 
 // Next returns the key-values in the lexical order of <Namespace, key>
 func (s *fullDBScanner) Next() (*statedb.VersionedKV, error) {
-	logger.Debugf("fullDBScanner.Next()... (TODO: test this function)")
-	for ; s.dbItr.Valid(); s.dbItr.Next() {
+	logger.Infof("fullDBScanner.Next()...")
+	for {
+		if s.firstKeyPassed {
+			s.dbItr.Next()
+		} else {
+			s.firstKeyPassed = true
+		}
+		if s.dbItr.Valid() {
+			logger.Infof("itr is valid")
+		} else {
+			logger.Infof("itr is not valid")
+			break
+		}
 		ns, key := kvdb.DecodeDataKey(s.dbItr.Key())
 		compositeKey := &statedb.CompositeKey{
 			Namespace: ns,
 			Key:       key,
 		}
-
+		logger.Infof("CompKey: %s (%#v)", compositeKey, compositeKey)
 		versionedVal, err := kvdb.DecodeValue(s.dbItr.Value())
 		if err != nil {
 			return nil, err
 		}
-
+		logger.Infof("versionedVal: %s (%#v)", versionedVal, versionedVal)
 		switch {
 		case !s.toSkip(ns):
 			return &statedb.VersionedKV{

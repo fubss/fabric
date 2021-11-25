@@ -145,7 +145,7 @@ func (dbInst *DB) Delete(key []byte, sync bool) error {
 // The resultset contains all the keys that are present in the db between the startKey (inclusive) and the endKey (exclusive).
 // A nil startKey represents the first available key and a nil endKey represent a logical key after the last available key
 func (dbInst *DB) GetIterator(startKey []byte, endKey []byte) (*rocksdb.Iterator, error) {
-	logger.Infof("Getting new RocksDB Iterator... for start key: [%s (%#v)] and end key: [%s (%#v)]", startKey, startKey, endKey, endKey) //TODO: delete this
+	logger.Infof("Getting new RocksDB Iterator... for start key: [%s (%+v: [%s (%+v)]", startKey, startKey, endKey, endKey) //TODO: delete this
 	if dbInst.dbState == closed {
 		err := errors.New("error while obtaining db iterator: rocksdb: closed")
 		logger.Infof("itr.Err()=[%+v]. Impossible to create an iterator", err)

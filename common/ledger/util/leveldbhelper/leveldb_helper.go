@@ -156,7 +156,7 @@ func (dbInst *DB) Delete(key []byte, sync bool) error {
 // The resultset contains all the keys that are present in the db between the startKey (inclusive) and the endKey (exclusive).
 // A nil startKey represents the first available key and a nil endKey represent a logical key after the last available key
 func (dbInst *DB) GetIterator(startKey []byte, endKey []byte) iterator.Iterator {
-	logger.Infof("Getting new Iterator for start key: [%s (%+v)] and end key: [%s(%+v)]", startKey, startKey, endKey, endKey) //TODO: delete this
+	logger.Infof("Getting new Iterator for start key: [%s (%#v)] and end key: [%s(%#v)]", startKey, startKey, endKey, endKey) //TODO: delete this
 	dbInst.mutex.RLock()
 	defer dbInst.mutex.RUnlock()
 	return dbInst.db.NewIterator(&goleveldbutil.Range{Start: startKey, Limit: endKey}, dbInst.readOpts)

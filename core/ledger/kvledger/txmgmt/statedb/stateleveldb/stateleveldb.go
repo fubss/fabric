@@ -383,7 +383,7 @@ func (s *fullDBScanner) Next() (*statedb.VersionedKV, error) {
 			Namespace: ns,
 			Key:       key,
 		}
-
+		logger.Infof("CompKey: %s (%#v)", compositeKey, compositeKey)
 		versionedVal, err := DecodeValue(s.dbItr.Value())
 		if err != nil {
 			return nil, err
