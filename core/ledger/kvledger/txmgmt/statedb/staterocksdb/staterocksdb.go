@@ -401,6 +401,8 @@ func (s *fullDBScanner) Next() (*statedb.VersionedKV, error) {
 	logger.Infof("fullDBScanner.Next()...")
 	for {
 		if s.firstKeyPassed {
+			s.dbItr.FreeKey()   //we have to free key & value,
+			s.dbItr.FreeValue() //otherwise iterator works incorrect
 			s.dbItr.Next()
 		} else {
 			s.firstKeyPassed = true
@@ -430,7 +432,8 @@ func (s *fullDBScanner) Next() (*statedb.VersionedKV, error) {
 			}, nil
 		default:
 			s.dbItr.Seek(kvdb.DataKeyStarterForNextNamespace(ns))
-			s.dbItr.Prev() //TODO: why Prev()? because Seek() founds key greater or equal
+			//s.dbItr.Prev() //why Prev()? because then function Next() will be called
+			s.firstKeyPassed = false //because docs says that itr.Prev() works slow
 		}
 	}
 	return nil, errors.Wrap(s.dbItr.Err(), "internal rocksdb error while retrieving data from db iterator")

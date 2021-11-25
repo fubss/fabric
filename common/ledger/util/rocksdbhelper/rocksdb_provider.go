@@ -156,17 +156,17 @@ func (p *Provider) Drop(dbName string) error {
 
 // Get returns the value for the given key
 func (h *DBHandle) Get(key []byte) ([]byte, error) {
-	return h.db.Get(constructLevelKey(h.dbName, key))
+	return h.db.Get(constructRocksKey(h.dbName, key))
 }
 
 // Put saves the key/value
 func (h *DBHandle) Put(key []byte, value []byte, sync bool) error {
-	return h.db.Put(constructLevelKey(h.dbName, key), value, sync)
+	return h.db.Put(constructRocksKey(h.dbName, key), value, sync)
 }
 
 // Delete deletes the given key
 func (h *DBHandle) Delete(key []byte, sync bool) error {
-	return h.db.Delete(constructLevelKey(h.dbName, key), sync)
+	return h.db.Delete(constructRocksKey(h.dbName, key), sync)
 }
 
 // DeleteAll deletes all the keys that belong to the channel (dbName).
@@ -251,17 +251,17 @@ func (h *DBHandle) WriteBatch(batch *UpdateBatch, sync bool) error {
 // A nil startKey represents the first available key and a nil endKey represent a logical key after the last available key
 func (h *DBHandle) GetIterator(startKey []byte, endKey []byte) (Iterator, error) {
 	var eKey []byte
-	sKey := constructLevelKey(h.dbName, startKey)
+	sKey := constructRocksKey(h.dbName, startKey)
 	if endKey == nil {
 		logger.Info("endKey is nil - TODO: IF-CASE HAS HAPPENED, WE SHOULD UNCOMMENT THIS SECTION")
-		//eKey = constructLevelKey(h.dbName, endKey)
+		//eKey = constructRocksKey(h.dbName, endKey)
 		//TODO: after checking all rocksdb tests it should be deleted
 		// replace the last byte 'dbNameKeySep' by 'lastKeyIndicator'
 		//eKey[len(eKey)-1] = lastKeyIndicator
 		//logger.Infof("endKey is nil: eKey=[%s(%#v)]", eKey, eKey)
 	} else {
 		logger.Infof("endKey is not nil: (%#v)", endKey)
-		eKey = constructLevelKey(h.dbName, endKey)
+		eKey = constructRocksKey(h.dbName, endKey)
 
 	}
 	logger.Infof("Constructing iterator with sKey=[%s(%#v)] and eKey=[%s(%#v)]", sKey, sKey, eKey, eKey)
@@ -296,12 +296,12 @@ func (b *UpdateBatch) Put(key []byte, value []byte) {
 	if value == nil {
 		panic("Nil value not allowed")
 	}
-	b.WriteBatch.Put(constructLevelKey(b.dbName, key), value)
+	b.WriteBatch.Put(constructRocksKey(b.dbName, key), value)
 }
 
 // Delete deletes a Key and associated value
 func (b *UpdateBatch) Delete(key []byte) {
-	b.WriteBatch.Delete(constructLevelKey(b.dbName, key))
+	b.WriteBatch.Delete(constructRocksKey(b.dbName, key))
 }
 
 // Iterator extends actual rocksdb iterator
@@ -333,14 +333,13 @@ func (itr *Iterator) FreeValue() {
 // Seek moves the iterator to the first key/value pair
 // whose key is greater than or equal to the given key.
 // It returns whether such pair exist.
-/*func (itr *Iterator) Seek(key []byte) {
-	levelKey := constructLevelKey(itr.dbName, key)
-	itr.Iterator.Seek(levelKey)
-	return
-}*/
+func (itr *Iterator) Seek(key []byte) {
+	rocksKey := constructRocksKey(itr.dbName, key)
+	itr.Iterator.Seek(rocksKey)
+}
 
 //TODO: should we make the mechanism differ from level db one?
-func constructLevelKey(dbName string, key []byte) []byte {
+func constructRocksKey(dbName string, key []byte) []byte {
 	return append(append([]byte(dbName), dbNameKeySep...), key...)
 }
 
