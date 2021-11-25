@@ -103,6 +103,10 @@ func (dbInst *DB) Get(key []byte) ([]byte, error) {
 	logger.Infof("Getting key [%s] from RocksDB...", key)
 	dbInst.mutex.RLock()
 	defer dbInst.mutex.RUnlock()
+	if dbInst.dbState == closed {
+		logger.Errorf("Error retrieving rocksdb key [%#v]: rocksdb is closed", key)
+		return nil, errors.Errorf("Error retrieving rocksdb key [%#v]: rocksdb is closed", key)
+	}
 	value, err := dbInst.db.Get(rocksdb.NewDefaultReadOptions(), key)
 	if err != nil {
 		logger.Errorf("Error retrieving rocksdb key [%#v]: %s", key, err)
@@ -229,12 +233,21 @@ func (f *FileLock) Lock() error {
 	var err error
 	var dirEmpty bool
 	var db *rocksdb.DB
+	if f.IsLocked() {
+		return errors.Errorf("FileLock is already set")
+	}
 	if dirEmpty, err = fileutil.CreateDirIfMissing(f.filePath); err != nil {
 		panic(fmt.Sprintf("Error creating dir if missing: %s", err))
 	}
 	logger.Debugf("while Lock dirEmpty = %+v", dirEmpty)
 	dbOpts.SetCreateIfMissing(dirEmpty)
-	if db, err = rocksdb.OpenDb(dbOpts, f.filePath); err != nil {
+	db, err = rocksdb.OpenDb(dbOpts, f.filePath)
+	errString := fmt.Sprintln(err)
+	//next if was added to pass the test TestFileLock from this package tests
+	if err != nil && errString[:38] == "IO error: lock hold by current process" {
+		return errors.Errorf("lock is already acquired on file %s", f.filePath)
+	}
+	if err != nil {
 		panic(fmt.Sprintf("Error opening rocksdb: %s", err))
 	}
 	logger.Debugf("RocksDB was successfully opened while Locking")
