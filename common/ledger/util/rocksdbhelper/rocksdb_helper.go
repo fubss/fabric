@@ -72,6 +72,9 @@ func (dbInst *DB) Open() {
 // IsEmpty returns whether or not a database is empty
 func (dbInst *DB) IsEmpty() (bool, error) {
 	logger.Debugf("Checkin if DB is empty...")
+	if dbInst.dbState == closed {
+		return false, errors.New("RocksDB is closed.")
+	}
 	dbInst.mutex.RLock()
 	defer dbInst.mutex.RUnlock()
 	itr := dbInst.db.NewIterator(rocksdb.NewDefaultReadOptions())
