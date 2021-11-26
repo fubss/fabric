@@ -103,10 +103,11 @@ func (dbInst *DB) Get(key []byte) ([]byte, error) {
 	logger.Infof("Getting key [%s] from RocksDB...", key)
 	dbInst.mutex.RLock()
 	defer dbInst.mutex.RUnlock()
-	if dbInst.dbState == closed {
+	//TODO: delete commened code below, if we never have to uncomment it
+	/*if dbInst.dbState == closed {
 		logger.Errorf("Error retrieving rocksdb key [%#v]: rocksdb is closed", key)
 		return nil, errors.Errorf("Error retrieving rocksdb key [%#v]: rocksdb is closed", key)
-	}
+	}*/
 	value, err := dbInst.db.Get(rocksdb.NewDefaultReadOptions(), key)
 	if err != nil {
 		logger.Errorf("Error retrieving rocksdb key [%#v]: %s", key, err)
