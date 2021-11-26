@@ -235,7 +235,7 @@ func (f *FileLock) Lock() error {
 	var dirEmpty bool
 	var db *rocksdb.DB
 	if f.IsLocked() {
-		return errors.Errorf("FileLock is already set")
+		return errors.Errorf("lock is already acquired")
 	}
 	if dirEmpty, err = fileutil.CreateDirIfMissing(f.filePath); err != nil {
 		panic(fmt.Sprintf("Error creating dir if missing: %s", err))
