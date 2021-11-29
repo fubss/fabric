@@ -251,6 +251,7 @@ func (vdb *versionedDB) GetFullScanIterator(skipNamespace func(string) bool) (st
 // for importing the state from a previously snapshotted state. The parameter itr provides access to
 // the snapshotted state.
 func (vdb *versionedDB) importState(itr statedb.FullScanIterator, savepoint *version.Height) error {
+	logger.Infof("State importing...")
 	if itr == nil {
 		return vdb.db.Put(savePointKey, savepoint.ToBytes(), true)
 	}
@@ -276,6 +277,7 @@ func (vdb *versionedDB) importState(itr statedb.FullScanIterator, savepoint *ver
 				return err
 			}
 			batchSize = 0
+			logger.Infof("Clearing batch...")
 			dbBatch.Clear()
 		}
 	}

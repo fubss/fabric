@@ -178,7 +178,7 @@ func TestFullScanIteratorErrorPropagation(t *testing.T) {
 			return false
 		},
 	)
-	require.Contains(t, err.Error(), "internal leveldb error while obtaining db iterator:")
+	require.Contains(t, err.Error(), "error while obtaining db iterator")
 
 	// error from function Next
 	reInitEnv()
@@ -240,7 +240,7 @@ func TestImportStateErrorPropagation(t *testing.T) {
 				},
 			},
 		)
-		require.Contains(t, err.Error(), "error writing batch to leveldb")
+		require.Contains(t, err.Error(), "error writing batch to rocksdb")
 	})
 }
 
@@ -265,7 +265,7 @@ func TestDropErrorPath(t *testing.T) {
 	require.NoError(t, err)
 
 	env.DBProvider.Close()
-	require.EqualError(t, env.DBProvider.Drop("testdroperror"), "internal leveldb error while obtaining db iterator: leveldb: closed")
+	require.EqualError(t, env.DBProvider.Drop("testdroperror"), "error while obtaining db iterator: rocksdb: closed")
 }
 
 type dummyFullScanIter struct {

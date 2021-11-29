@@ -255,7 +255,7 @@ func (h *DBHandle) GetIterator(startKey []byte, endKey []byte) (*Iterator, error
 	if endKey == nil {
 		// replace the last byte 'dbNameKeySep' by 'lastKeyIndicator'
 		eKey[len(eKey)-1] = lastKeyIndicator
-		logger.Info("endKey is nil: eKey=[%s(%#v)]", eKey, eKey)
+		logger.Infof("endKey is nil: eKey=[%s(%#v)]", eKey, eKey)
 	}
 	logger.Infof("Getting iterator for range [%#v] - [%#v]", sKey, eKey)
 	itr := h.db.GetIterator(sKey, eKey)

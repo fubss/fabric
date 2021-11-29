@@ -92,6 +92,7 @@ func (dbInst *DB) IsEmpty() (bool, error) {
 
 // Close closes the underlying db
 func (dbInst *DB) Close() {
+	logger.Infof("Closing db...")
 	dbInst.mutex.Lock()
 	defer dbInst.mutex.Unlock()
 	if dbInst.dbState == closed {

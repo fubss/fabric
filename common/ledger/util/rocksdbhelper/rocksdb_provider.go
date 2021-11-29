@@ -178,15 +178,14 @@ func (h *DBHandle) deleteAll() error {
 	defer iter.Close()
 
 	// use leveldb iterator directly to be more efficient
-	dbIter := iter.Iterator
 
 	// This is common code shared by all the leveldb instances. Because each leveldb has its own key size pattern,
 	// each batch is limited by memory usage instead of number of keys. Once the batch memory usage reaches maxBatchSize,
 	// the batch will be committed.
 	numKeys := 0
 	batchSize := 0
-	batch := &rocksdb.WriteBatch{}
-	for ; dbIter.Valid(); dbIter.Next() {
+	batch := rocksdb.NewWriteBatch()
+	for dbIter := iter.Iterator; dbIter.Valid(); dbIter.Next() {
 		if err := dbIter.Err(); err != nil {
 			return errors.Wrap(err, "internal rocksdb error while retrieving data from db iterator")
 		}
@@ -202,6 +201,8 @@ func (h *DBHandle) deleteAll() error {
 			batchSize = 0
 			batch.Clear()
 		}
+		dbIter.Key().Free()
+		dbIter.Value().Free()
 	}
 	if batch.Count() > 0 {
 		return h.db.WriteBatch(batch, true)
@@ -239,6 +240,9 @@ func (h *DBHandle) WriteBatch(batch *UpdateBatch, sync bool) error {
 	if batch == nil || batch.Count() == 0 {
 		return nil
 	}
+	if h.db.dbState == closed {
+		return fmt.Errorf("error writing batch to rocksdb")
+	}
 	logger.Infof("WriteBatch()..., sync=[%+v]", sync)
 	if err := h.db.WriteBatch(batch.WriteBatch, sync); err != nil {
 		return err
@@ -250,18 +254,15 @@ func (h *DBHandle) WriteBatch(batch *UpdateBatch, sync bool) error {
 // The resultset contains all the keys that are present in the db between the startKey (inclusive) and the endKey (exclusive).
 // A nil startKey represents the first available key and a nil endKey represent a logical key after the last available key
 func (h *DBHandle) GetIterator(startKey []byte, endKey []byte) (Iterator, error) {
-	var eKey []byte
+	eKey := constructRocksKey(h.dbName, endKey)
 	sKey := constructRocksKey(h.dbName, startKey)
 	if endKey == nil {
-		logger.Info("endKey is nil - TODO: IF-CASE HAS HAPPENED, WE SHOULD UNCOMMENT THIS SECTION")
-		//eKey = constructRocksKey(h.dbName, endKey)
-		//TODO: after checking all rocksdb tests it should be deleted
+		logger.Info("endKey is nil")
 		// replace the last byte 'dbNameKeySep' by 'lastKeyIndicator'
-		//eKey[len(eKey)-1] = lastKeyIndicator
-		//logger.Infof("endKey is nil: eKey=[%s(%#v)]", eKey, eKey)
+		eKey[len(eKey)-1] = lastKeyIndicator
+		logger.Infof("endKey is nil: eKey=[%s(%#v)]", eKey, eKey)
 	} else {
 		logger.Infof("endKey is not nil: (%#v)", endKey)
-		eKey = constructRocksKey(h.dbName, endKey)
 
 	}
 	logger.Infof("Constructing iterator with sKey=[%s(%#v)] and eKey=[%s(%#v)]", sKey, sKey, eKey, eKey)
