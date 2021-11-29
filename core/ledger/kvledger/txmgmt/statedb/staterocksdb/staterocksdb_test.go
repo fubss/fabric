@@ -190,7 +190,7 @@ func TestFullScanIteratorErrorPropagation(t *testing.T) {
 	require.NoError(t, err)
 	itr.Close()
 	_, err = itr.Next()
-	require.Contains(t, err.Error(), "internal leveldb error while retrieving data from db iterator:")
+	require.Contains(t, err.Error(), "internal rocksdb error while retrieving data from db iterator: iterator is not valid")
 }
 
 func TestImportStateErrorPropagation(t *testing.T) {

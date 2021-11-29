@@ -382,6 +382,7 @@ type fullDBScanner struct {
 	dbItr          rocksdbhelper.Iterator
 	toSkip         func(namespace string) bool
 	firstKeyPassed bool
+	closed         bool
 }
 
 func newFullDBScanner(db *rocksdbhelper.DBHandle, skipNamespace func(namespace string) bool) (*fullDBScanner, error) {
@@ -401,6 +402,9 @@ func newFullDBScanner(db *rocksdbhelper.DBHandle, skipNamespace func(namespace s
 // Next returns the key-values in the lexical order of <Namespace, key>
 func (s *fullDBScanner) Next() (*statedb.VersionedKV, error) {
 	logger.Infof("fullDBScanner.Next()...")
+	if s.closed {
+		return nil, errors.Errorf("internal rocksdb error while retrieving data from db iterator: iterator is not valid")
+	}
 	for {
 		if s.firstKeyPassed {
 			s.dbItr.FreeKey()   //we have to free key & value,
@@ -446,4 +450,5 @@ func (s *fullDBScanner) Close() {
 		return
 	}
 	s.dbItr.Close()
+	s.closed = true
 }
