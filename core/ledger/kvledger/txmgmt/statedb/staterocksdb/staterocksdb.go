@@ -292,13 +292,13 @@ func (vdb *versionedDB) IsEmpty() (bool, error) {
 
 type kvScanner struct {
 	namespace            string
-	dbItr                rocksdbhelper.Iterator
+	dbItr                *rocksdbhelper.Iterator
 	requestedLimit       int32
 	totalRecordsReturned int32
 	firstKeyPassed       bool
 }
 
-func newKVScanner(namespace string, dbItr rocksdbhelper.Iterator, requestedLimit int32) *kvScanner {
+func newKVScanner(namespace string, dbItr *rocksdbhelper.Iterator, requestedLimit int32) *kvScanner {
 	return &kvScanner{namespace, dbItr, requestedLimit, 0, false}
 }
 
@@ -379,7 +379,7 @@ func (scanner *kvScanner) GetBookmarkAndClose() string {
 type fullDBScanner struct {
 	db *rocksdbhelper.DBHandle
 	//TODO add to kv-common-provider or interface
-	dbItr          rocksdbhelper.Iterator
+	dbItr          *rocksdbhelper.Iterator
 	toSkip         func(namespace string) bool
 	firstKeyPassed bool
 	closed         bool

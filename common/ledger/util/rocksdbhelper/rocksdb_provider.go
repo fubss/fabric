@@ -253,7 +253,7 @@ func (h *DBHandle) WriteBatch(batch *UpdateBatch, sync bool) error {
 // GetIterator gets an handle to iterator. The iterator should be released after the use.
 // The resultset contains all the keys that are present in the db between the startKey (inclusive) and the endKey (exclusive).
 // A nil startKey represents the first available key and a nil endKey represent a logical key after the last available key
-func (h *DBHandle) GetIterator(startKey []byte, endKey []byte) (Iterator, error) {
+func (h *DBHandle) GetIterator(startKey []byte, endKey []byte) (*Iterator, error) {
 	eKey := constructRocksKey(h.dbName, endKey)
 	sKey := constructRocksKey(h.dbName, startKey)
 	if endKey == nil {
@@ -269,14 +269,14 @@ func (h *DBHandle) GetIterator(startKey []byte, endKey []byte) (Iterator, error)
 	itr, err := h.db.GetIterator(sKey, eKey)
 	if err != nil {
 		logger.Infof("Error! Closing iterator...")
-		return Iterator{}, err
+		return nil, err
 	}
 	if itr.Valid() {
 		logger.Infof("itr is Valid")
 	} else {
 		logger.Infof("itr is not Valid")
 	}
-	return Iterator{h.dbName, itr}, nil
+	return &Iterator{h.dbName, itr}, nil
 }
 
 // Close closes the DBHandle after its db data have been deleted
