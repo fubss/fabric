@@ -332,8 +332,8 @@ func (scanner *kvScanner) Next() (*statedb.VersionedKV, error) {
 	vv, err := kvdb.DecodeValue(dbValCopy)
 	logger.Infof("after iterator.Next(): dbKey=[%s (%#v)], key=[%s], vv=[%s (%#v)], dbVal=[%s]", dbKey, dbKey, key, vv, vv, dbValCopy)
 
-	scanner.dbItr.FreeKey()   //we have to free key & value,
-	scanner.dbItr.FreeValue() //otherwise iterator works incorrect
+	//scanner.dbItr.FreeKey()   //we have to free key & value,
+	//scanner.dbItr.FreeValue() //otherwise iterator works incorrect
 	if err != nil {
 		return nil, err
 	}
@@ -407,8 +407,8 @@ func (s *fullDBScanner) Next() (*statedb.VersionedKV, error) {
 	}
 	for {
 		if s.firstKeyPassed {
-			s.dbItr.FreeKey()   //we have to free key & value,
-			s.dbItr.FreeValue() //otherwise iterator works incorrect
+			//s.dbItr.FreeKey()   //we have to free key & value,
+			//s.dbItr.FreeValue() //otherwise iterator works incorrect
 			s.dbItr.Next()
 		} else {
 			s.firstKeyPassed = true

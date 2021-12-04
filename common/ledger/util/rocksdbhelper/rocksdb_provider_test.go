@@ -239,18 +239,23 @@ func TestDrop(t *testing.T) {
 	}{
 		{
 			db:             db1,
-			expectedKeys:   createTestKeys(0, 19),
-			expectedValues: createTestValues("db1", 0, 19),
+			expectedKeys:   createTestKeys(1, 19),
+			expectedValues: createTestValues("db1", 1, 19),
 		},
 		{
 			db:             db2,
-			expectedKeys:   createTestKeys(0, 19),
-			expectedValues: createTestValues("db2", 0, 19),
+			expectedKeys:   createTestKeys(1, 19),
+			expectedValues: createTestValues("db2", 1, 19),
 		},
 		{
 			db:             db3,
-			expectedKeys:   createTestLongKeys(0, 9999),
-			expectedValues: createTestValues("db3", 0, 9999),
+			expectedKeys:   createTestLongKeys(1, 9999),
+			expectedValues: createTestValues("db3", 1, 9999),
+		},
+		{
+			db:             db3,
+			expectedKeys:   createTestLongKeys(1, 9999),
+			expectedValues: createTestValues("db3", 1, 9999),
 		},
 	}
 
@@ -280,8 +285,8 @@ func TestDrop(t *testing.T) {
 		},
 		{
 			db:             db2,
-			expectedKeys:   createTestKeys(0, 19),
-			expectedValues: createTestValues("db2", 0, 19),
+			expectedKeys:   createTestKeys(1, 19),
+			expectedValues: createTestValues("db2", 1, 19),
 		},
 		{
 			db:             db3,
@@ -299,7 +304,7 @@ func TestDrop(t *testing.T) {
 
 	// negative test
 	p.Close()
-	require.EqualError(t, db2.deleteAll(), "error while obtaining db iterator: leveldb: closed")
+	require.EqualError(t, db2.deleteAll(), "error while obtaining db iterator: rocksdb: closed")
 }
 
 func TestFormatCheck(t *testing.T) {
@@ -535,6 +540,11 @@ func checkItrResults(t *testing.T, itr *Iterator, expectedKeys []string, expecte
 	for itr.Next(); itr.Valid(); itr.Next() {
 		actualKeys = append(actualKeys, string(itr.Key()))
 		actualValues = append(actualValues, string(itr.Value()))
+		//itr.FreeKey()
+		//itr.FreeValue()
+	}
+	if err := itr.Iterator.Err(); err != nil {
+		logger.Infof("Error-catch-2 during iteration: %s", err)
 	}
 	require.Equal(t, expectedKeys, actualKeys)
 	require.Equal(t, expectedValues, actualValues)

@@ -9,6 +9,7 @@ package rocksdbhelper
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	//"path/filepath"
 	"testing"
@@ -206,7 +207,7 @@ func TestFileLockLockUnlockLock(t *testing.T) {
 }*/
 
 //I think this test is strange
-/*func TestCreateDBInNonEmptyDir(t *testing.T) {
+func TestCreateDBInNonEmptyDir(t *testing.T) {
 	require.NoError(t, os.RemoveAll(testDBPath), "")
 	require.NoError(t, os.MkdirAll(testDBPath, 0o775), "")
 	file, err := os.Create(filepath.Join(testDBPath, "dummyfile.txt"))
@@ -220,4 +221,4 @@ func TestFileLockLockUnlockLock(t *testing.T) {
 		}
 	}()
 	db.Open()
-}*/
+}

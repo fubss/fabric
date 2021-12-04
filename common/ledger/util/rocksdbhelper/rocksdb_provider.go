@@ -189,7 +189,9 @@ func (h *DBHandle) deleteAll() error {
 		if err := dbIter.Err(); err != nil {
 			return errors.Wrap(err, "internal rocksdb error while retrieving data from db iterator")
 		}
-		key := dbIter.Key().Data()
+		rocksdbKey := dbIter.Key()
+		key := rocksdbKey.Data()
+		rocksdbKey.Free()
 		numKeys++
 		batchSize = batchSize + len(key)
 		batch.Delete(key)
@@ -201,8 +203,6 @@ func (h *DBHandle) deleteAll() error {
 			batchSize = 0
 			batch.Clear()
 		}
-		dbIter.Key().Free()
-		dbIter.Value().Free()
 	}
 	if batch.Count() > 0 {
 		return h.db.WriteBatch(batch, true)
@@ -311,25 +311,47 @@ type Iterator struct {
 	*rocksdb.Iterator
 }
 
-// Key wraps actual leveldb iterator method
-func (itr *Iterator) Key() []byte {
-	return retrieveAppKey(itr.Iterator.Key().Data())
+//Next wraps actual rocksdb iterator method.
+//It prevents a fatal error when Next() called after the last db key
+//if iterator.Valid() == false
+func (itr *Iterator) Next() {
+	if itr.Iterator.Valid() {
+		//itr.FreeKey()
+		//itr.FreeValue()
+		itr.Iterator.Next()
+	} else {
+		logger.Infof("iterator is not valid anymore")
+	}
+	if err := itr.Iterator.Err(); err != nil {
+		logger.Infof("Error during iteration: %s", err)
+	}
 }
 
-// Key wraps actual leveldb iterator method
+// Key wraps actual rocksdb iterator method
+func (itr *Iterator) Key() []byte {
+	rocksdbKey := itr.Iterator.Key()
+	key := rocksdbKey.Data()
+	rocksdbKey.Free()
+	return retrieveAppKey(key)
+}
+
+// Key wraps actual rocksdb iterator method
 func (itr *Iterator) Value() []byte {
-	return itr.Iterator.Value().Data()
+	rocksdbValue := itr.Iterator.Value()
+	value := rocksdbValue.Data()
+	rocksdbValue.Free()
+	return value
 }
 
 // FreeKey wraps actual freeing the Key slice data
-func (itr *Iterator) FreeKey() {
+/*func (itr *Iterator) FreeKey() {
 	itr.Iterator.Key().Free()
 }
 
 // FreeValue wraps actual freeing the Value slice data
 func (itr *Iterator) FreeValue() {
 	itr.Iterator.Value().Free()
-}
+}*/
 
 // Seek moves the iterator to the first key/value pair
 // whose key is greater than or equal to the given key.

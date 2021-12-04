@@ -35,15 +35,10 @@ type DB struct {
 // CreateDB constructs a `DB`
 func CreateDB(conf *Conf) *DB {
 	logger.Debugf("RocksDB constructing...")
-	/*writeOptsNoSync := rocksdb.NewDefaultWriteOptions()
-	writeOptsSync := rocksdb.NewDefaultWriteOptions()
-	writeOptsSync.SetSync(true)*/
 	logger.Debugf("RocksDB constructing successfully finished")
 	return &DB{
 		conf:    conf,
 		dbState: closed,
-		/*writeOptsNoSync: writeOptsNoSync,
-		writeOptsSync:   writeOptsSync,*/
 	}
 }
 
@@ -59,8 +54,12 @@ func (dbInst *DB) Open() {
 	dbPath := dbInst.conf.DBPath
 	dbOpts.SetCreateIfMissing(true)
 	var err error
-	if _, err = fileutil.CreateDirIfMissing(dbPath); err != nil {
+	isDirEmpty, err := fileutil.CreateDirIfMissing(dbPath)
+	if err != nil {
 		panic(fmt.Sprintf("Error creating dir if missing: %s", err))
+	}
+	if !isDirEmpty {
+		panic(fmt.Sprintf("Path %s is not empty", dbPath))
 	}
 	if dbInst.db, err = rocksdb.OpenDb(dbOpts, dbPath); err != nil {
 		panic(fmt.Sprintf("Error opening rocksdb: %s", err))
@@ -161,10 +160,11 @@ func (dbInst *DB) GetIterator(startKey []byte, endKey []byte) (*rocksdb.Iterator
 	}
 	//ro := dbInst.readOpts
 	ro := rocksdb.NewDefaultReadOptions()
-	// docs says that If you want to avoid disturbing your live traffic
+	// Docs says that If you want to avoid disturbing your live traffic
 	// while doing the bulk read, be sure to call SetFillCache(false)
 	// on the ReadOptions you use when creating the Iterator.
 	ro.SetFillCache(false)
+
 	///	dbInst.mutex.RUnlock()
 	//ro.SetIterateLowerBound(startKey)
 	if endKey != nil {
