@@ -52,15 +52,12 @@ func (dbInst *DB) Open() {
 	}
 	dbOpts := rocksdb.NewDefaultOptions()
 	dbPath := dbInst.conf.DBPath
-	dbOpts.SetCreateIfMissing(true)
 	var err error
 	isDirEmpty, err := fileutil.CreateDirIfMissing(dbPath)
 	if err != nil {
 		panic(fmt.Sprintf("Error creating dir if missing: %s", err))
 	}
-	if !isDirEmpty {
-		panic(fmt.Sprintf("Path %s is not empty", dbPath))
-	}
+	dbOpts.SetCreateIfMissing(isDirEmpty)
 	if dbInst.db, err = rocksdb.OpenDb(dbOpts, dbPath); err != nil {
 		panic(fmt.Sprintf("Error opening rocksdb: %s", err))
 	}
@@ -164,9 +161,8 @@ func (dbInst *DB) GetIterator(startKey []byte, endKey []byte) (*rocksdb.Iterator
 	// while doing the bulk read, be sure to call SetFillCache(false)
 	// on the ReadOptions you use when creating the Iterator.
 	ro.SetFillCache(false)
-
+	ro.SetBackgroundPurgeOnIteratorCleanup(true)
 	///	dbInst.mutex.RUnlock()
-	//ro.SetIterateLowerBound(startKey)
 	if endKey != nil {
 		logger.Infof("if-case: endKey!=nil, UpperBound set")
 		ro.SetIterateUpperBound(endKey)
@@ -175,6 +171,7 @@ func (dbInst *DB) GetIterator(startKey []byte, endKey []byte) (*rocksdb.Iterator
 		ro.SetIterateUpperBound(endKey)
 
 	}
+	logger.Infof("PurgeOnIterCleanup = %t", ro.GetBackgroundPurgeOnIteratorCleanup())
 	ni := dbInst.db.NewIterator(ro)
 	if ni.Valid() {
 		logger.Infof("ni is Valid, err=[%+v]", ni.Err())

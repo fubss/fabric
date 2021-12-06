@@ -257,6 +257,11 @@ func TestDrop(t *testing.T) {
 			expectedKeys:   createTestLongKeys(1, 9999),
 			expectedValues: createTestValues("db3", 1, 9999),
 		},
+		{
+			db:             db3,
+			expectedKeys:   createTestLongKeys(1, 9999),
+			expectedValues: createTestValues("db3", 1, 9999),
+		},
 	}
 
 	for _, dbSetup := range expectedSetup {
