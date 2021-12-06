@@ -465,7 +465,11 @@ func TestIsEmpty(t *testing.T) {
 
 func testFormatCheck(t *testing.T, dataFormat, expectedFormat string, dataExists bool, expectedErr *dataformat.ErrFormatMismatch) {
 	require.NoError(t, os.RemoveAll(testDBPath))
+	var p *Provider
 	defer func() {
+		if p != nil {
+			p.Close()
+		}
 		require.NoError(t, os.RemoveAll(testDBPath))
 	}()
 
