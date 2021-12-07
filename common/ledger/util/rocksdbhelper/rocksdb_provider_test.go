@@ -212,7 +212,8 @@ func TestBatchedUpdates(t *testing.T) {
 
 func TestDrop(t *testing.T) {
 	env := newTestProviderEnv(t, testDBPath)
-	defer env.cleanup()
+	//cleanup was commented because rocksdb panics if it closes second time
+	//defer env.cleanup()
 	p := env.provider
 
 	db1 := p.GetDBHandle("db1")
@@ -264,7 +265,8 @@ func TestDrop(t *testing.T) {
 		},
 	}
 
-	for _, dbSetup := range expectedSetup {
+	for i, dbSetup := range expectedSetup {
+		t.Logf("expextedSetup_%d", i)
 		itr, err := dbSetup.db.GetIterator(nil, nil)
 		require.NoError(t, err)
 		checkItrResults(t, itr, dbSetup.expectedKeys, dbSetup.expectedValues)
@@ -300,7 +302,8 @@ func TestDrop(t *testing.T) {
 		},
 	}
 
-	for _, result := range expectedResults {
+	for i, result := range expectedResults {
+		t.Logf("expextedResults_%d", i)
 		itr, err := result.db.GetIterator(nil, nil)
 		require.NoError(t, err)
 		checkItrResults(t, itr, result.expectedKeys, result.expectedValues)
@@ -552,8 +555,9 @@ func checkItrResults(t *testing.T, itr *Iterator, expectedKeys []string, expecte
 		//itr.FreeKey()
 		//itr.FreeValue()
 	}
+	t.Logf("Iterator error is: [%s]", itr.Iterator.Err())
 	if err := itr.Iterator.Err(); err != nil {
-		logger.Infof("Error-catch-2 during iteration: %s", err)
+		t.Logf("Error-catch-2 during iteration: %s", err)
 	}
 	require.Equal(t, expectedKeys, actualKeys)
 	require.Equal(t, expectedValues, actualValues)

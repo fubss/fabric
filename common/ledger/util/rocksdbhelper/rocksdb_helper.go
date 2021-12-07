@@ -50,13 +50,22 @@ func (dbInst *DB) Open() {
 	if dbInst.dbState == opened {
 		return
 	}
+	//block based table from the example
+	//bbto := rocksdb.NewDefaultBlockBasedTableOptions()
+	//bbto.SetBlockCache(rocksdb.NewLRUCache(3 << 30)) //3 GB
+
 	dbOpts := rocksdb.NewDefaultOptions()
+	//dbOpts.SetBlockBasedTableFactory(bbto)
+
 	dbPath := dbInst.conf.DBPath
 	var err error
+	logger.Debugf("ParanoidChecks is: %t", dbOpts.ParanoidChecks())
+
 	isDirEmpty, err := fileutil.CreateDirIfMissing(dbPath)
 	if err != nil {
 		panic(fmt.Sprintf("Error creating dir if missing: %s", err))
 	}
+	dbOpts.SetParanoidChecks(false) //docs says that default value is false
 	dbOpts.SetCreateIfMissing(isDirEmpty)
 	if dbInst.db, err = rocksdb.OpenDb(dbOpts, dbPath); err != nil {
 		panic(fmt.Sprintf("Error opening rocksdb: %s", err))
@@ -180,7 +189,7 @@ func (dbInst *DB) GetIterator(startKey []byte, endKey []byte) (*rocksdb.Iterator
 	}
 	//if startKey != nil {
 	ni.Seek(startKey) //TODO: delete THIS_COMMENT: will point to the second or equal iterator key?
-	logger.Infof("Seeked startKey=[%s]", ni.Key().Data())
+	//logger.Infof("Seeked startKey=[%s]", ni.Key().Data())
 	//ni.Prev() //we have to make step back
 	//logger.Infof("Previous startKey=[%s]", ni.Key().Data())
 	//logger.Infof("Seeked firstKey in DB=[%s]", ni.Key().Data())
