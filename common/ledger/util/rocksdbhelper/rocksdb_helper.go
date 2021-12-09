@@ -51,11 +51,11 @@ func (dbInst *DB) Open() {
 		return
 	}
 	//block based table from the example
-	//bbto := rocksdb.NewDefaultBlockBasedTableOptions()
-	//bbto.SetBlockCache(rocksdb.NewLRUCache(3 << 30)) //3 GB
+	bbto := rocksdb.NewDefaultBlockBasedTableOptions()
+	bbto.SetBlockCache(rocksdb.NewLRUCache(4 << 30)) //4 GB
 
 	dbOpts := rocksdb.NewDefaultOptions()
-	//dbOpts.SetBlockBasedTableFactory(bbto)
+	dbOpts.SetBlockBasedTableFactory(bbto)
 
 	dbPath := dbInst.conf.DBPath
 	var err error
@@ -159,6 +159,8 @@ func (dbInst *DB) Delete(key []byte, sync bool) error {
 // A nil startKey represents the first available key and a nil endKey represent a logical key after the last available key
 func (dbInst *DB) GetIterator(startKey []byte, endKey []byte) (*rocksdb.Iterator, error) {
 	logger.Infof("Getting new RocksDB Iterator... for start key: [%s (%+v: [%s (%+v)]", startKey, startKey, endKey, endKey) //TODO: delete this
+	dbInst.mutex.Lock()
+	defer dbInst.mutex.Unlock()
 	if dbInst.dbState == closed {
 		err := errors.New("error while obtaining db iterator: rocksdb: closed")
 		logger.Infof("itr.Err()=[%+v]. Impossible to create an iterator", err)
@@ -171,6 +173,7 @@ func (dbInst *DB) GetIterator(startKey []byte, endKey []byte) (*rocksdb.Iterator
 	// on the ReadOptions you use when creating the Iterator.
 	ro.SetFillCache(false)
 	ro.SetBackgroundPurgeOnIteratorCleanup(true)
+	ro.SetPinData(true)
 	///	dbInst.mutex.RUnlock()
 	if endKey != nil {
 		logger.Infof("if-case: endKey!=nil, UpperBound set")
