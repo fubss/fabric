@@ -7,7 +7,7 @@ import (
 
 	"github.com/hyperledger/fabric/common/flogging"
 	"github.com/hyperledger/fabric/internal/fileutil"
-	rocksdb "github.com/linxGnu/grocksdb"
+	rocksdb "github.com/line/gorocksdb"
 	"github.com/pkg/errors"
 )
 
@@ -59,7 +59,6 @@ func (dbInst *DB) Open() {
 
 	dbPath := dbInst.conf.DBPath
 	var err error
-	logger.Debugf("ParanoidChecks is: %t", dbOpts.ParanoidChecks())
 
 	isDirEmpty, err := fileutil.CreateDirIfMissing(dbPath)
 	if err != nil {
@@ -170,7 +169,7 @@ func (dbInst *DB) GetIterator(startKey []byte, endKey []byte) (*rocksdb.Iterator
 	// while doing the bulk read, be sure to call SetFillCache(false)
 	// on the ReadOptions you use when creating the Iterator.
 	ro.SetFillCache(false)
-	ro.SetBackgroundPurgeOnIteratorCleanup(true)
+	//ro.SetBackgroundPurgeOnIteratorCleanup(true)
 	///	dbInst.mutex.RUnlock()
 	if endKey != nil {
 		logger.Infof("if-case: endKey!=nil, UpperBound set")
@@ -180,7 +179,6 @@ func (dbInst *DB) GetIterator(startKey []byte, endKey []byte) (*rocksdb.Iterator
 		ro.SetIterateUpperBound(endKey)
 
 	}
-	logger.Infof("PurgeOnIterCleanup = %t", ro.GetBackgroundPurgeOnIteratorCleanup())
 	ni := dbInst.db.NewIterator(ro)
 	if ni.Valid() {
 		logger.Infof("ni is Valid, err=[%+v]", ni.Err())

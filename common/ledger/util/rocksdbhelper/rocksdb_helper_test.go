@@ -14,7 +14,7 @@ import (
 	//"path/filepath"
 	"testing"
 
-	rocksdb "github.com/linxGnu/grocksdb"
+	rocksdb "github.com/line/gorocksdb"
 	"github.com/stretchr/testify/require"
 )
 

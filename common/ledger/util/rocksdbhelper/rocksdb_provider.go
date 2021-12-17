@@ -6,7 +6,7 @@ import (
 	"sync"
 
 	"github.com/hyperledger/fabric/common/ledger/dataformat"
-	rocksdb "github.com/linxGnu/grocksdb"
+	rocksdb "github.com/line/gorocksdb"
 	"github.com/pkg/errors"
 )
 
