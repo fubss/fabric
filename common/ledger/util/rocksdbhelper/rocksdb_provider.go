@@ -190,7 +190,9 @@ func (h *DBHandle) deleteAll() error {
 			return errors.Wrap(err, "internal rocksdb error while retrieving data from db iterator")
 		}
 		rocksdbKey := dbIter.Key()
-		key := rocksdbKey.Data()
+		keyData := rocksdbKey.Data()
+		key := make([]byte, len(keyData))
+		copy(key, keyData)
 		rocksdbKey.Free()
 		numKeys++
 		batchSize = batchSize + len(key)
@@ -330,7 +332,9 @@ func (itr *Iterator) Next() {
 // Key wraps actual rocksdb iterator method
 func (itr *Iterator) Key() []byte {
 	rocksdbKey := itr.Iterator.Key()
-	key := rocksdbKey.Data()
+	keyData := rocksdbKey.Data()
+	key := make([]byte, len(keyData))
+	copy(key, keyData)
 	rocksdbKey.Free()
 	return retrieveAppKey(key)
 }
@@ -338,7 +342,9 @@ func (itr *Iterator) Key() []byte {
 // Key wraps actual rocksdb iterator method
 func (itr *Iterator) Value() []byte {
 	rocksdbValue := itr.Iterator.Value()
-	value := rocksdbValue.Data()
+	valueData := rocksdbValue.Data()
+	value := make([]byte, len(valueData))
+	copy(value, valueData)
 	rocksdbValue.Free()
 	return value
 }

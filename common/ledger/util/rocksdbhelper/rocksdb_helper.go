@@ -113,13 +113,17 @@ func (dbInst *DB) Get(key []byte) ([]byte, error) {
 		logger.Errorf("Error retrieving rocksdb key [%#v]: rocksdb is closed", key)
 		return nil, errors.Errorf("Error retrieving rocksdb key [%#v]: rocksdb is closed", key)
 	}*/
-	value, err := dbInst.db.Get(rocksdb.NewDefaultReadOptions(), key)
+	rocksdbValue, err := dbInst.db.Get(rocksdb.NewDefaultReadOptions(), key)
 	if err != nil {
 		logger.Errorf("Error retrieving rocksdb key [%#v]: %s", key, err)
 		return nil, errors.Wrapf(err, "error retrieving rocksdb key [%#v]", key)
 	}
-	logger.Infof("got data [%s]", value.Data())
-	return value.Data(), nil
+	valueData := rocksdbValue.Data()
+	value := make([]byte, len(valueData))
+	copy(value, valueData)
+	rocksdbValue.Free()
+	logger.Infof("got data [%s]", value)
+	return value, nil
 }
 
 // Put saves the key/value
@@ -158,7 +162,7 @@ func (dbInst *DB) Delete(key []byte, sync bool) error {
 // The resultset contains all the keys that are present in the db between the startKey (inclusive) and the endKey (exclusive).
 // A nil startKey represents the first available key and a nil endKey represent a logical key after the last available key
 func (dbInst *DB) GetIterator(startKey []byte, endKey []byte) (*rocksdb.Iterator, error) {
-	logger.Infof("Getting new RocksDB Iterator... for start key: [%s (%+v: [%s (%+v)]", startKey, startKey, endKey, endKey) //TODO: delete this
+	logger.Infof("Getting new RocksDB Iterator... for start key: [%s (%+v) and end key: [%s (%+v)]", startKey, startKey, endKey, endKey) //TODO: delete this
 	if dbInst.dbState == closed {
 		err := errors.New("error while obtaining db iterator: rocksdb: closed")
 		logger.Infof("itr.Err()=[%+v]. Impossible to create an iterator", err)
