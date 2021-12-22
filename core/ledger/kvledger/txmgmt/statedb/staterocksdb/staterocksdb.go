@@ -350,18 +350,28 @@ func (scanner *kvScanner) Next() (*statedb.VersionedKV, error) {
 
 func (scanner *kvScanner) Close() {
 	logger.Infof("Closing rocksdb iterator...")
-	if scanner.dbItr.Iterator.Err() != nil {
-		logger.Errorf("RocksDB iterator error: [%+v]", scanner.dbItr.Iterator.Err())
-	}
-	if scanner.dbItr.Iterator.Valid() {
-		logger.Infof("Close(): itr is Valid")
+	if scanner.dbItr != nil {
+		logger.Debugf("scanner.dbItr != nil")
+		if scanner.dbItr.Iterator != nil {
+			logger.Debugf("scanner.dbItr.Iterator != nil")
+			if scanner.dbItr.Iterator.Err() != nil {
+				logger.Errorf("RocksDB iterator error: [%+v]", scanner.dbItr.Iterator.Err())
+			}
+			if scanner.dbItr.Iterator.Valid() {
+				logger.Infof("Close(): itr is Valid")
+			} else {
+				logger.Infof("Close(): itr is not Valid")
+			}
+			if scanner.dbItr.Iterator.Err() != nil {
+				logger.Errorf("RocksDB iterator error: [%+v]", scanner.dbItr.Iterator.Err())
+			}
+			scanner.dbItr.Iterator.Close()
+			scanner.dbItr = nil
+		}
+
 	} else {
-		logger.Infof("Close(): itr is not Valid")
+		logger.Debugf("scanner.dbItr = nil or scanner.dbItr.Iterator = nil")
 	}
-	if scanner.dbItr.Iterator.Err() != nil {
-		logger.Errorf("RocksDB iterator error: [%+v]", scanner.dbItr.Iterator.Err())
-	}
-	scanner.dbItr.Iterator.Close()
 }
 
 func (scanner *kvScanner) GetBookmarkAndClose() string {

@@ -90,6 +90,7 @@ func splitCompositeKeyOfPurgeIndexByTxid(compositeKey []byte) (uuid string, bloc
 // into txid, uuid and blockHeight.
 func splitCompositeKeyOfPurgeIndexByHeight(compositeKey []byte) (txid string, uuid string, blockHeight uint64, err error) {
 	var n int
+	logger.Debugf("splitCompositeKeyOfPurgeIndexByHeight()")
 	blockHeight, n, err = util.DecodeOrderPreservingVarUint64(compositeKey[2:])
 	if err != nil {
 		return

@@ -58,6 +58,7 @@ func constructRangeScan(ns string, key string) *rangeScan {
 
 func (r *rangeScan) decodeBlockNumTranNum(dataKey dataKey) (uint64, uint64, error) {
 	blockNumTranNumBytes := bytes.TrimPrefix(dataKey, r.startKey)
+	logger.Debugf("decodeBlockNumTranNum()")
 	blockNum, blockBytesConsumed, err := util.DecodeOrderPreservingVarUint64(blockNumTranNumBytes)
 	if err != nil {
 		return 0, 0, err

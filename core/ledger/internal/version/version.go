@@ -19,8 +19,11 @@ package version
 import (
 	"fmt"
 
+	"github.com/hyperledger/fabric/common/flogging"
 	"github.com/hyperledger/fabric/common/ledger/util"
 )
+
+var logger = flogging.MustGetLogger("version")
 
 // Height represents the height of a transaction in blockchain
 type Height struct {
@@ -35,6 +38,7 @@ func NewHeight(blockNum, txNum uint64) *Height {
 
 // NewHeightFromBytes constructs a new instance of Height from serialized bytes
 func NewHeightFromBytes(b []byte) (*Height, int, error) {
+	logger.Debugf("NewHeightFromBytes()")
 	blockNum, n1, err := util.DecodeOrderPreservingVarUint64(b)
 	if err != nil {
 		return nil, -1, err

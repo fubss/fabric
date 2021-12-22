@@ -506,7 +506,7 @@ func decodeSnapshotRowFromSortEncoding(encKey []byte) (*snapshotRow, error) {
 	ns := nsCollKVHash[0]
 	coll := nsCollKVHash[1]
 	kvHashes := nsCollKVHash[2]
-
+	logger.Debugf("decodeSnapshotRowFromSortEncoding()")
 	keyHashLen, bytesConsumed, err := util.DecodeOrderPreservingVarUint64(kvHashes)
 	if err != nil {
 		return nil, err

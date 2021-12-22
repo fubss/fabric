@@ -429,6 +429,7 @@ func constructTxIDKey(txID string, blkNum, txNum uint64) []byte {
 // retrieveTxID takes input an encoded txid key of the format `prefix:len(TxID):TxID:BlkNum:TxNum`
 // and returns the TxID from this
 func retrieveTxID(encodedTxIDKey []byte) (string, error) {
+	logger.Debug("retrieveTxID()")
 	if len(encodedTxIDKey) == 0 {
 		return "", errors.New("invalid txIDKey - zero-length slice")
 	}
@@ -449,6 +450,7 @@ func retrieveTxID(encodedTxIDKey []byte) (string, error) {
 }
 
 func retrieveBlockNum(encodedTxIDKey []byte, BlkNumStartingIndex int) (uint64, error) {
+	logger.Debugf("retrieveBlockNum()")
 	n, _, err := util.DecodeOrderPreservingVarUint64(encodedTxIDKey[BlkNumStartingIndex:])
 	return n, err
 }

@@ -18,12 +18,15 @@ import (
 	"strings"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric/common/flogging"
 	"github.com/hyperledger/fabric/common/ledger/util"
 	"github.com/hyperledger/fabric/core/ledger/kvledger"
 	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/privacyenabledstate"
 	"github.com/hyperledger/fabric/internal/fileutil"
 	"github.com/pkg/errors"
 )
+
+var logger = flogging.MustGetLogger("ledgerutil")
 
 const (
 	// AllPubDiffsByKey - Filename for the json output that contains all public differences ordered by key
@@ -432,6 +435,7 @@ func newSnapshotRecord(record *privacyenabledstate.SnapshotRecord) (*snapshotRec
 
 // Obtain the block height and transaction height of a snapshot from its version bytes
 func heightFromBytes(b []byte) (uint64, uint64, error) {
+	logger.Debugf("heightFromBytes()")
 	blockNum, n1, err := util.DecodeOrderPreservingVarUint64(b)
 	if err != nil {
 		return 0, 0, err

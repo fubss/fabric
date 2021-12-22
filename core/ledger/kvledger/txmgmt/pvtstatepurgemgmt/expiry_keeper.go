@@ -117,6 +117,7 @@ func encodeExpiryInfoValue(pvtdataKeys *PvtdataKeys) ([]byte, error) {
 }
 
 func decodeExpiryInfo(key []byte, value []byte) (*expiryInfo, error) {
+	logger.Debugf("decodeExpiryInfo()")
 	expiryBlk, n, err := util.DecodeOrderPreservingVarUint64(key[1:])
 	if err != nil {
 		return nil, err

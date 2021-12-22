@@ -403,5 +403,6 @@ func encodeSnapshotRequestKey(blockNumber uint64) []byte {
 }
 
 func decodeSnapshotRequestKey(key []byte) (uint64, int, error) {
+	logger.Debugf("decodeSnapshotRequestKey()")
 	return util.DecodeOrderPreservingVarUint64(key[len(snapshotRequestKeyPrefix):])
 }

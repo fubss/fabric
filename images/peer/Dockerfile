@@ -43,16 +43,12 @@ COPY --from=peer /usr/include /usr/include
 #==================================================================
 #=======================T__E__S__T__I__N__G========================
 #==================================================================
-#next line is for testing purpose. TODO: remove after testing.
-COPY --from=golang-rocksdb /usr/local/go/ /usr/local/go/
-#next line is for testing purpose. TODO: remove after testing.
-ENV PATH="/usr/local/go/bin:${PATH}"
-#next two lines is for testing purpose. TODO: remove after testing.
-RUN apk add --no-cache \
-	gcc
-#next two lines is for testing purpose. TODO: remove after testing.
-RUN echo "@testing http://nl.alpinelinux.org/alpine/edge/testing" >>/etc/apk/repositories
-RUN apk add --update --no-cache zlib zlib-dev bzip2 bzip2-dev snappy snappy-dev lz4 lz4-dev zstd@testing zstd-dev@testing libtbb-dev@testing libtbb@testing
+#COPY --from=golang-rocksdb /usr/local/go/ /usr/local/go/
+#ENV PATH="/usr/local/go/bin:${PATH}"
+#RUN apk add --no-cache \
+#	gcc
+#RUN echo "@testing http://nl.alpinelinux.org/alpine/edge/testing" >>/etc/apk/repositories
+#RUN apk add --update --no-cache zlib zlib-dev bzip2 bzip2-dev snappy snappy-dev lz4 lz4-dev zstd@testing zstd-dev@testing libtbb-dev@testing libtbb@testing
 #==================================================================
 EXPOSE 7051
 CMD ["peer","node","start"]
