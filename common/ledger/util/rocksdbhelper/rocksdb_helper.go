@@ -123,6 +123,9 @@ func (dbInst *DB) Get(key []byte) ([]byte, error) {
 	copy(value, valueData)
 	rocksdbValue.Free()
 	logger.Infof("got data [%s]", value)
+	if len(value) == 0 {
+		return nil, nil //module require asserts nil for empty byte slices
+	}
 	return value, nil
 }
 
