@@ -552,8 +552,6 @@ func checkItrResults(t *testing.T, itr *Iterator, expectedKeys []string, expecte
 	for itr.Next(); itr.Valid(); itr.Next() {
 		actualKeys = append(actualKeys, string(itr.Key()))
 		actualValues = append(actualValues, string(itr.Value()))
-		//itr.FreeKey()
-		//itr.FreeValue()
 	}
 	t.Logf("Iterator error is: [%s]", itr.Iterator.Err())
 	if err := itr.Iterator.Err(); err != nil {

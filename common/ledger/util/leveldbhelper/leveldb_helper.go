@@ -118,6 +118,7 @@ func (dbInst *DB) Get(key []byte) ([]byte, error) {
 		logger.Errorf("Error retrieving leveldb key [%#v]: %s", key, err)
 		return nil, errors.Wrapf(err, "error retrieving leveldb key [%#v]", key)
 	}
+	logger.Infof("got data [%s]", value)
 	return value, nil
 }
 

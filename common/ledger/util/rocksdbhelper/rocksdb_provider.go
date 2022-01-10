@@ -278,7 +278,11 @@ func (h *DBHandle) GetIterator(startKey []byte, endKey []byte) (*Iterator, error
 	} else {
 		logger.Infof("itr is not Valid")
 	}
-	return &Iterator{h.dbName, itr}, nil
+	return &Iterator{
+			dbName:   h.dbName,
+			Iterator: itr.Iterator,
+			ro:       itr.ro},
+		nil
 }
 
 // Close closes the DBHandle after its db data have been deleted
@@ -311,6 +315,7 @@ func (b *UpdateBatch) Delete(key []byte) {
 type Iterator struct {
 	dbName string
 	*rocksdb.Iterator
+	ro *rocksdb.ReadOptions
 }
 
 //Next wraps actual rocksdb iterator method.
@@ -365,6 +370,11 @@ func (itr *Iterator) FreeValue() {
 func (itr *Iterator) Seek(key []byte) {
 	rocksKey := constructRocksKey(itr.dbName, key)
 	itr.Iterator.Seek(rocksKey)
+}
+
+func (itr *Iterator) Close() {
+	itr.Iterator.Close()
+	itr.ro.Destroy()
 }
 
 //TODO: should we make the mechanism differ from level db one?

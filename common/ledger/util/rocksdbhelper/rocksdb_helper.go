@@ -158,10 +158,16 @@ func (dbInst *DB) Delete(key []byte, sync bool) error {
 	return nil
 }
 
+// IteratorHelper extends actual rocksdb iterator
+type IteratorHelper struct {
+	*rocksdb.Iterator
+	ro *rocksdb.ReadOptions //we have to destroy them after iterator will be closed
+}
+
 // GetIterator returns an iterator over key-value store. The iterator should be closed after the use.
 // The resultset contains all the keys that are present in the db between the startKey (inclusive) and the endKey (exclusive).
 // A nil startKey represents the first available key and a nil endKey represent a logical key after the last available key
-func (dbInst *DB) GetIterator(startKey []byte, endKey []byte) (*rocksdb.Iterator, error) {
+func (dbInst *DB) GetIterator(startKey []byte, endKey []byte) (*IteratorHelper, error) {
 	logger.Infof("Getting new RocksDB Iterator... for start key: [%s (%+v) and end key: [%s (%+v)]", startKey, startKey, endKey, endKey) //TODO: delete this
 	if dbInst.dbState == closed {
 		err := errors.New("error while obtaining db iterator: rocksdb: closed")
@@ -197,7 +203,10 @@ func (dbInst *DB) GetIterator(startKey []byte, endKey []byte) (*rocksdb.Iterator
 	//ni.Prev() //we have to make step back
 	//logger.Infof("Previous startKey=[%s]", ni.Key().Data())
 	//logger.Infof("Seeked firstKey in DB=[%s]", ni.Key().Data())
-	return ni, nil
+	return &IteratorHelper{
+			Iterator: ni,
+			ro:       ro},
+		nil
 }
 
 // WriteBatch writes a batch

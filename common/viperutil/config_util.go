@@ -64,6 +64,7 @@ func New() *ConfigParser {
 // AddConfigPaths keeps a list of path to search the relevant
 // config file. Multiple paths can be provided.
 func (c *ConfigParser) AddConfigPaths(cfgPaths ...string) {
+	logger.Debugf("AddConfigPaths(), cfgPaths: [%s]", cfgPaths)
 	c.configPaths = append(c.configPaths, cfgPaths...)
 }
 

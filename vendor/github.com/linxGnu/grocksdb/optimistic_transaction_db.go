@@ -113,6 +113,30 @@ func (db *OptimisticTransactionDB) TransactionBegin(
 		db.c, opts.c, transactionOpts.c, nil))
 }
 
+// NewCheckpoint creates a new Checkpoint for this db.
+func (db *OptimisticTransactionDB) NewCheckpoint() (cp *Checkpoint, err error) {
+	var cErr *C.char
+
+	cCheckpoint := C.rocksdb_optimistictransactiondb_checkpoint_object_create(
+		db.c, &cErr,
+	)
+	if err = fromCError(cErr); err == nil {
+		cp = NewNativeCheckpoint(cCheckpoint)
+	}
+
+	return
+}
+
+// Write batch.
+func (db *OptimisticTransactionDB) Write(opts *WriteOptions, batch *WriteBatch) (err error) {
+	var cErr *C.char
+
+	C.rocksdb_optimistictransactiondb_write(db.c, opts.c, batch.c, &cErr)
+	err = fromCError(cErr)
+
+	return
+}
+
 // Close closes the database.
 func (db *OptimisticTransactionDB) Close() {
 	C.rocksdb_optimistictransactiondb_close(db.c)

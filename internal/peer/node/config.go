@@ -67,6 +67,7 @@ func ledgerConfig() *ledger.Config {
 			RootDir: snapshotsRootDir,
 		},
 	}
+	logger.Debugf("ConfigDB: %s", conf.StateDBConfig.StateDatabase)
 
 	if conf.StateDBConfig.StateDatabase == ledger.CouchDB {
 		conf.StateDBConfig.CouchDB = &ledger.CouchDBConfig{

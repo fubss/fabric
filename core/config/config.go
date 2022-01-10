@@ -12,8 +12,11 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/hyperledger/fabric/common/flogging"
 	"github.com/spf13/viper"
 )
+
+var logger = flogging.MustGetLogger("config")
 
 func dirExists(path string) bool {
 	fi, err := os.Stat(path)
@@ -24,6 +27,7 @@ func dirExists(path string) bool {
 }
 
 func AddConfigPath(v *viper.Viper, p string) {
+	logger.Debugf("New config path added: %s", p)
 	if v != nil {
 		v.AddConfigPath(p)
 	} else {
