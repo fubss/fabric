@@ -5,7 +5,7 @@
 ARG GO_VER
 ARG ALPINE_VER
 #FROM golang:${GO_VER}-alpine${ALPINE_VER} as golang
-FROM fubss/rocksdb:6.22.1-golang${GO_VER}-alpine${ALPINE_VER} as golang-rocksdb
+FROM fubss/rocksdb:6.27.3-golang${GO_VER}-alpine${ALPINE_VER} as golang-rocksdb
 
 RUN apk add --no-cache \
 	bash \
