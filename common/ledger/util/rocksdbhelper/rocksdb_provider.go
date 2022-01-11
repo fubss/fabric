@@ -75,7 +75,7 @@ func openDBAndCheckFormat(conf *Conf) (d *DB, e error) {
 
 	defer func() {
 		if e != nil {
-			logger.Infof("Closing RocksDB...")
+			logger.Debugf("Closing RocksDB...")
 			db.Close()
 		}
 	}()
@@ -89,14 +89,13 @@ func openDBAndCheckFormat(conf *Conf) (d *DB, e error) {
 	if err != nil {
 		return nil, err
 	}
-	logger.Infof("rocks db IsEmpty()=%t", dbEmpty) //TODO: delete this
+	logger.Debugf("rocks db IsEmpty()=%t", dbEmpty) //TODO: delete this
 
 	if dbEmpty && conf.ExpectedFormat != "" {
-		logger.Infof("DB is empty Setting db format as %s", conf.ExpectedFormat)
+		logger.Debugf("DB is empty Setting db format as %s", conf.ExpectedFormat)
 		if err := internalDB.Put(formatVersionKey, []byte(conf.ExpectedFormat), true); err != nil {
 			return nil, err
 		}
-		logger.Infof("formatVersionKey succesfully put into a rocksdb") //TODO: delete this
 		return db, nil
 	}
 
@@ -214,7 +213,7 @@ func (h *DBHandle) deleteAll() error {
 
 // IsEmpty returns true if no data exists for the DBHandle
 func (h *DBHandle) IsEmpty() (bool, error) {
-	logger.Info("IsEmpty(), getting Iterator with nil start&end keys...")
+	logger.Debug("IsEmpty(), getting Iterator with nil start&end keys...")
 	itr, err := h.GetIterator(nil, nil)
 	if err != nil {
 		return false, err
@@ -245,7 +244,7 @@ func (h *DBHandle) WriteBatch(batch *UpdateBatch, sync bool) error {
 	if h.db.dbState == closed {
 		return fmt.Errorf("error writing batch to rocksdb")
 	}
-	logger.Infof("WriteBatch()..., sync=[%+v]", sync)
+	logger.Debugf("WriteBatch()..., sync=[%+v]", sync)
 	if err := h.db.WriteBatch(batch.WriteBatch, sync); err != nil {
 		return err
 	}
@@ -259,24 +258,24 @@ func (h *DBHandle) GetIterator(startKey []byte, endKey []byte) (*Iterator, error
 	eKey := constructRocksKey(h.dbName, endKey)
 	sKey := constructRocksKey(h.dbName, startKey)
 	if endKey == nil {
-		logger.Info("endKey is nil")
+		logger.Debug("endKey is nil")
 		// replace the last byte 'dbNameKeySep' by 'lastKeyIndicator'
 		eKey[len(eKey)-1] = lastKeyIndicator
-		logger.Infof("endKey is nil: eKey=[%s(%#v)]", eKey, eKey)
+		logger.Debugf("endKey is nil: eKey=[%s(%#v)]", eKey, eKey)
 	} else {
-		logger.Infof("endKey is not nil: (%#v)", endKey)
+		logger.Debugf("endKey is not nil: (%#v)", endKey)
 
 	}
-	logger.Infof("Constructing iterator with sKey=[%s(%#v)] and eKey=[%s(%#v)]", sKey, sKey, eKey, eKey)
+	logger.Debugf("Constructing iterator with sKey=[%s(%#v)] and eKey=[%s(%#v)]", sKey, sKey, eKey, eKey)
 	itr, err := h.db.GetIterator(sKey, eKey)
 	if err != nil {
-		logger.Infof("Error! Closing iterator...")
+		logger.Debugf("Error! Closing iterator...")
 		return nil, err
 	}
 	if itr.Valid() {
-		logger.Infof("itr is Valid")
+		logger.Debugf("itr is Valid")
 	} else {
-		logger.Infof("itr is not Valid")
+		logger.Debugf("itr is not Valid")
 	}
 	return &Iterator{
 			dbName:   h.dbName,
@@ -323,14 +322,12 @@ type Iterator struct {
 //if iterator.Valid() == false
 func (itr *Iterator) Next() {
 	if itr.Iterator.Valid() {
-		//itr.FreeKey()
-		//itr.FreeValue()
 		itr.Iterator.Next()
 	} else {
-		logger.Infof("iterator is not valid anymore")
+		logger.Debugf("iterator is not valid anymore")
 	}
 	if err := itr.Iterator.Err(); err != nil {
-		logger.Infof("Error during iteration: %s", err)
+		logger.Debugf("Error during iteration: %s", err)
 	}
 }
 

@@ -251,13 +251,13 @@ func (h *DBHandle) WriteBatch(batch *UpdateBatch, sync bool) error {
 func (h *DBHandle) GetIterator(startKey []byte, endKey []byte) (*Iterator, error) {
 	sKey := constructLevelKey(h.dbName, startKey)
 	eKey := constructLevelKey(h.dbName, endKey)
-	logger.Infof("Constructing iterator with sKey=[%s(%#v)] and eKey=[%s(%#v)]", sKey, sKey, eKey, eKey)
+	logger.Debugf("Constructing iterator with sKey=[%s(%#v)] and eKey=[%s(%#v)]", sKey, sKey, eKey, eKey)
 	if endKey == nil {
 		// replace the last byte 'dbNameKeySep' by 'lastKeyIndicator'
 		eKey[len(eKey)-1] = lastKeyIndicator
-		logger.Infof("endKey is nil: eKey=[%s(%#v)]", eKey, eKey)
+		logger.Debugf("endKey is nil: eKey=[%s(%#v)]", eKey, eKey)
 	}
-	logger.Infof("Getting iterator for range [%#v] - [%#v]", sKey, eKey)
+	logger.Debugf("Getting iterator for range [%#v] - [%#v]", sKey, eKey)
 	itr := h.db.GetIterator(sKey, eKey)
 	if err := itr.Error(); err != nil {
 		itr.Release()

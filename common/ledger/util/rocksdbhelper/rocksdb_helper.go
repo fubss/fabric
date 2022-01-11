@@ -59,7 +59,7 @@ func (dbInst *DB) Open() {
 
 	dbPath := dbInst.conf.DBPath
 	var err error
-	logger.Debugf("ParanoidChecks is: %t", dbOpts.ParanoidChecks())
+	logger.Debugf("ParanoidChecks is: %t, (default value is false, so it will be set to false)", dbOpts.ParanoidChecks())
 
 	isDirEmpty, err := fileutil.CreateDirIfMissing(dbPath)
 	if err != nil {
@@ -70,7 +70,7 @@ func (dbInst *DB) Open() {
 	if dbInst.db, err = rocksdb.OpenDb(dbOpts, dbPath); err != nil {
 		panic(fmt.Sprintf("Error opening rocksdb: %s", err))
 	}
-	logger.Infof("DB was successfully opened in path: [ %s ]", dbPath)
+	logger.Debugf("DB was successfully opened in path: [ %s ]", dbPath)
 	dbInst.dbState = opened
 }
 
@@ -98,14 +98,14 @@ func (dbInst *DB) Close() {
 	if dbInst.dbState == closed {
 		return
 	}
-	logger.Infof("Closing db...")
-	dbInst.db.Close() //TODO: should we check if db closed here?
+	logger.Debugf("Closing db...")
+	dbInst.db.Close() //TODO: should we check if db have been already closed here?
 	dbInst.dbState = closed
 }
 
 // Get returns the value for the given key
 func (dbInst *DB) Get(key []byte) ([]byte, error) {
-	logger.Infof("Getting key [%s] from RocksDB...", key)
+	logger.Debugf("Getting key [%s] from RocksDB...", key)
 	dbInst.mutex.RLock()
 	defer dbInst.mutex.RUnlock()
 	//TODO: delete commened code below, if we never have to uncomment it
@@ -122,7 +122,7 @@ func (dbInst *DB) Get(key []byte) ([]byte, error) {
 	value := make([]byte, len(valueData))
 	copy(value, valueData)
 	rocksdbValue.Free()
-	logger.Infof("got data [%s]", value)
+	logger.Debugf("got data [%s]", value)
 	if len(value) == 0 {
 		return nil, nil //module require asserts nil for empty byte slices
 	}
@@ -171,10 +171,10 @@ type IteratorHelper struct {
 // The resultset contains all the keys that are present in the db between the startKey (inclusive) and the endKey (exclusive).
 // A nil startKey represents the first available key and a nil endKey represent a logical key after the last available key
 func (dbInst *DB) GetIterator(startKey []byte, endKey []byte) (*IteratorHelper, error) {
-	logger.Infof("Getting new RocksDB Iterator... for start key: [%s (%+v) and end key: [%s (%+v)]", startKey, startKey, endKey, endKey) //TODO: delete this
+	logger.Debugf("Getting new RocksDB Iterator... for start key: [%s (%+v) and end key: [%s (%+v)]", startKey, startKey, endKey, endKey) //TODO: delete this
 	if dbInst.dbState == closed {
 		err := errors.New("error while obtaining db iterator: rocksdb: closed")
-		logger.Infof("itr.Err()=[%+v]. Impossible to create an iterator", err)
+		logger.Debugf("itr.Err()=[%+v]. Impossible to create an iterator", err)
 		return nil, err
 	}
 	//ro := dbInst.readOpts
@@ -186,26 +186,15 @@ func (dbInst *DB) GetIterator(startKey []byte, endKey []byte) (*IteratorHelper, 
 	ro.SetBackgroundPurgeOnIteratorCleanup(true)
 	///	dbInst.mutex.RUnlock()
 	if endKey != nil {
-		logger.Infof("if-case: endKey!=nil, UpperBound set")
+		logger.Debugf("if-case: endKey!=nil, UpperBound set")
 		ro.SetIterateUpperBound(endKey)
 	} else {
-		logger.Info("endKey is nil, no UpperBound would be set in the previous variant")
+		logger.Debug("endKey is nil, no UpperBound would be set in the previous variant")
 		ro.SetIterateUpperBound(endKey)
 
 	}
-	logger.Infof("PurgeOnIterCleanup = %t", ro.GetBackgroundPurgeOnIteratorCleanup())
 	ni := dbInst.db.NewIterator(ro)
-	if ni.Valid() {
-		logger.Infof("ni is Valid, err=[%+v]", ni.Err())
-	} else {
-		logger.Infof("ni is not Valid, err=[%+v]", ni.Err())
-	}
-	//if startKey != nil {
-	ni.Seek(startKey) //TODO: delete THIS_COMMENT: will point to the second or equal iterator key?
-	//logger.Infof("Seeked startKey=[%s]", ni.Key().Data())
-	//ni.Prev() //we have to make step back
-	//logger.Infof("Previous startKey=[%s]", ni.Key().Data())
-	//logger.Infof("Seeked firstKey in DB=[%s]", ni.Key().Data())
+	ni.Seek(startKey)
 	return &IteratorHelper{
 			Iterator: ni,
 			ro:       ro},
@@ -214,7 +203,7 @@ func (dbInst *DB) GetIterator(startKey []byte, endKey []byte) (*IteratorHelper, 
 
 // WriteBatch writes a batch
 func (dbInst *DB) WriteBatch(batch *rocksdb.WriteBatch, sync bool) error {
-	logger.Infof("WritingBatch.Count()=[%d]", batch.Count()) //TODO: delete this
+	logger.Debugf("WritingBatch.Count()=[%d]", batch.Count()) //TODO: delete this
 	dbInst.mutex.RLock()
 	defer dbInst.mutex.RUnlock()
 	wo := rocksdb.NewDefaultWriteOptions()

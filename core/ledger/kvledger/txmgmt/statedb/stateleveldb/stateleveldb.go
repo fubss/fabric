@@ -200,7 +200,7 @@ func (vdb *versionedDB) ApplyUpdates(batch *statedb.UpdateBatch, height *version
 				if err != nil {
 					return err
 				}
-				logger.Infof("dbBatch.Put(dataKey=[%#v (%s)], encodedVal=[%#v (%s)])", dataKey, dataKey, encodedVal, encodedVal)
+				logger.Debugf("dbBatch.Put(dataKey=[%#v (%s)], encodedVal=[%#v (%s)])", dataKey, dataKey, encodedVal, encodedVal)
 				dbBatch.Put(dataKey, encodedVal)
 			}
 		}
@@ -310,13 +310,13 @@ func newKVScanner(namespace string, dbItr iterator.Iterator, requestedLimit int3
 }
 
 func (scanner *kvScanner) Next() (*statedb.VersionedKV, error) {
-	logger.Infof("kvScanner.Next()...") //TODO: delete this
+	logger.Debugf("kvScanner.Next()...") //TODO: delete this
 	if scanner.requestedLimit > 0 && scanner.totalRecordsReturned >= scanner.requestedLimit {
-		logger.Infof("if-case scanner.requestedLimit=[%+v], scanner.totalRecordsReturned=[%+v]", scanner.requestedLimit, scanner.totalRecordsReturned) //TODO remove this
+		logger.Debugf("if-case scanner.requestedLimit=[%+v], scanner.totalRecordsReturned=[%+v]", scanner.requestedLimit, scanner.totalRecordsReturned) //TODO remove this
 		return nil, nil
 	}
 	if !scanner.dbItr.Next() {
-		logger.Infof("if-case: Next returned false")
+		logger.Debugf("if-case: Next returned false")
 		return nil, nil
 	}
 
@@ -326,7 +326,7 @@ func (scanner *kvScanner) Next() (*statedb.VersionedKV, error) {
 	copy(dbValCopy, dbVal)
 	_, key := DecodeDataKey(dbKey)
 	vv, err := DecodeValue(dbValCopy)
-	logger.Infof("after iterator.Next(): dbKey=[%s (%#v)], key=[%s], vv=[%s (%#v)], dbVal=[%s]", dbKey, dbKey, key, vv, vv, dbValCopy)
+	logger.Debugf("after iterator.Next(): dbKey=[%s (%#v)], key=[%s], vv=[%s (%#v)], dbVal=[%s]", dbKey, dbKey, key, vv, vv, dbValCopy)
 	if err != nil {
 		return nil, err
 	}
@@ -383,7 +383,7 @@ func (s *fullDBScanner) Next() (*statedb.VersionedKV, error) {
 			Namespace: ns,
 			Key:       key,
 		}
-		logger.Infof("CompKey: %s (%#v)", compositeKey, compositeKey)
+		logger.Debugf("CompKey: %s (%#v)", compositeKey, compositeKey)
 		versionedVal, err := DecodeValue(s.dbItr.Value())
 		if err != nil {
 			return nil, err
