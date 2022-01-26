@@ -70,7 +70,7 @@ func (dbInst *DB) Open() {
 	if dbInst.db, err = rocksdb.OpenDb(dbOpts, dbPath); err != nil {
 		panic(fmt.Sprintf("Error opening rocksdb: %s", err))
 	}
-	logger.Debugf("DB was successfully opened in path: [ %s ]", dbPath)
+	logger.Infof("DB RocksDB was successfully opened in path: [ %s ]", dbPath)
 	dbInst.dbState = opened
 }
 
@@ -262,7 +262,7 @@ func (f *FileLock) Lock() error {
 	if err != nil {
 		panic(fmt.Sprintf("Error opening rocksdb: %s", err))
 	}
-	logger.Debugf("RocksDB was successfully opened while Locking")
+	logger.Infof("RocksDB was successfully opened while Locking")
 	if err != nil && err == syscall.EAGAIN {
 		return errors.Errorf("lock is already acquired on file %s", f.filePath)
 	}

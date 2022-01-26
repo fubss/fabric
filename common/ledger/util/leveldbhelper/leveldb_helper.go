@@ -75,7 +75,7 @@ func (dbInst *DB) Open() {
 	if dbInst.db, err = leveldb.OpenFile(dbPath, dbOpts); err != nil {
 		panic(fmt.Sprintf("Error opening leveldb: %s", err))
 	}
-	logger.Debugf("dbPath=[%s]", dbPath)
+	logger.Infof("DB LevelDB was successfully opened in path: [ %s ]", dbPath)
 	dbInst.dbState = opened
 }
 
@@ -222,7 +222,7 @@ func (f *FileLock) Lock() error {
 
 	// only mutate the lock db reference AFTER validating that the lock was held.
 	f.db = db
-	logger.Debugf("leveldb Lock successfully set")
+	logger.Infof("LevelDB was successfully opened while Locking")
 	return nil
 }
 
