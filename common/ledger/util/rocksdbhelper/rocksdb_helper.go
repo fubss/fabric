@@ -50,12 +50,19 @@ func (dbInst *DB) Open() {
 	if dbInst.dbState == opened {
 		return
 	}
+
+	//Bloom filter
+	filter := rocksdb.NewBloomFilter(10)
 	//block based table from the example
-	//bbto := rocksdb.NewDefaultBlockBasedTableOptions()
-	//bbto.SetBlockCache(rocksdb.NewLRUCache(3 << 30)) //3 GB
+	bbto := rocksdb.NewDefaultBlockBasedTableOptions()
+	bbto.SetBlockCache(rocksdb.NewLRUCache(3 << 30)) //3 GB
+	bbto.SetFilterPolicy(filter)
 
 	dbOpts := rocksdb.NewDefaultOptions()
-	//dbOpts.SetBlockBasedTableFactory(bbto)
+	dbOpts.SetBlockBasedTableFactory(bbto)
+
+	dbOpts.SetBottommostCompression(rocksdb.ZSTDCompression)
+	dbOpts.SetCompression(rocksdb.LZ4Compression)
 
 	dbPath := dbInst.conf.DBPath
 	var err error
@@ -262,7 +269,7 @@ func (f *FileLock) Lock() error {
 	if err != nil {
 		panic(fmt.Sprintf("Error opening rocksdb: %s", err))
 	}
-	logger.Infof("RocksDB was successfully opened while Locking")
+	logger.Infof("RocksDB was successfully opened while locking in path %s", f.filePath)
 	if err != nil && err == syscall.EAGAIN {
 		return errors.Errorf("lock is already acquired on file %s", f.filePath)
 	}
