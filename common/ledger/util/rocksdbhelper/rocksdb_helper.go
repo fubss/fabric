@@ -27,8 +27,8 @@ type DB struct {
 	dbState dbState
 	mutex   sync.RWMutex
 
-	/*readOpts        *rocksdb.ReadOptions
-	writeOptsNoSync *rocksdb.WriteOptions
+	readOpts *rocksdb.ReadOptions
+	/*writeOptsNoSync *rocksdb.WriteOptions
 	writeOptsSync   *rocksdb.WriteOptions*/
 }
 
@@ -37,8 +37,9 @@ func CreateDB(conf *Conf) *DB {
 	logger.Debugf("RocksDB constructing...")
 	logger.Debugf("RocksDB constructing successfully finished")
 	return &DB{
-		conf:    conf,
-		dbState: closed,
+		conf:     conf,
+		dbState:  closed,
+		readOpts: rocksdb.NewDefaultReadOptions(),
 	}
 }
 
@@ -113,7 +114,7 @@ func (dbInst *DB) Get(key []byte) ([]byte, error) {
 		logger.Errorf("Error retrieving rocksdb key [%#v]: rocksdb is closed", key)
 		return nil, errors.Errorf("Error retrieving rocksdb key [%#v]: rocksdb is closed", key)
 	}*/
-	rocksdbValue, err := dbInst.db.Get(rocksdb.NewDefaultReadOptions(), key)
+	rocksdbValue, err := dbInst.db.Get(dbInst.readOpts, key)
 	if err != nil {
 		logger.Errorf("Error retrieving rocksdb key [%#v]: %s", key, err)
 		return nil, errors.Wrapf(err, "error retrieving rocksdb key [%#v]", key)
