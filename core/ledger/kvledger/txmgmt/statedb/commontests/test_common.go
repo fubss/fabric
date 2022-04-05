@@ -1160,6 +1160,23 @@ func CreateTestData(t *testing.T, db statedb.VersionedDB, ns string, numKeys int
 	return expectedKeys
 }
 
+func WriteLittleDataToDB(db statedb.VersionedDB) (createdKeysAmount int) {
+	batch := statedb.NewUpdateBatch()
+	vv1 := statedb.VersionedValue{Value: []byte("value1"), Version: version.NewHeight(1, 1)}
+	vv2 := statedb.VersionedValue{Value: []byte("value2"), Version: version.NewHeight(1, 2)}
+	vv3 := statedb.VersionedValue{Value: []byte("value3"), Version: version.NewHeight(1, 3)}
+	vv4 := statedb.VersionedValue{Value: []byte{}, Version: version.NewHeight(1, 4)}
+	vv5 := statedb.VersionedValue{Value: []byte("null"), Version: version.NewHeight(1, 5)}
+	batch.Put("ns", "key1", vv1.Value, vv1.Version)
+	batch.Put("ns", "key2", vv2.Value, vv2.Version)
+	batch.Put("ns", "key3", vv3.Value, vv3.Version)
+	batch.Put("ns", "key4", vv4.Value, vv4.Version)
+	batch.Put("ns", "key5", vv5.Value, vv5.Version)
+	savePoint := version.NewHeight(2, 5)
+	db.ApplyUpdates(batch, savePoint)
+	return 5
+}
+
 type stringset []string
 
 func (s stringset) contains(str string) bool {

@@ -23,20 +23,20 @@ type TestVDBEnv struct {
 
 // NewTestVDBEnv instantiates and new level db backed TestVDB
 func NewTestVDBEnv(t testing.TB) *TestVDBEnv {
-	t.Logf("Creating new TestVDBEnv")
+	//t.Logf("Creating new TestVDBEnv")
 	dbPath, err := ioutil.TempDir("", "staterocksdb")
 	if err != nil {
 		t.Fatalf("Failed to create rocksdb directory: %s", err)
 	}
 	dbProvider, err := NewVersionedDBProvider(dbPath)
 	require.NoError(t, err)
-	t.Logf("Returning new TestVDBEnv...")
+	//t.Logf("Returning new TestVDBEnv...")
 	return &TestVDBEnv{t, dbProvider, dbPath}
 }
 
 // Cleanup closes the db and removes the db folder
 func (env *TestVDBEnv) Cleanup() {
-	env.t.Logf("Cleaningup TestVDBEnv")
+	//env.t.Logf("Cleaningup TestVDBEnv")
 	env.DBProvider.Close()
 	os.RemoveAll(env.dbPath)
 }

@@ -8,7 +8,11 @@ package staterocksdb
 
 import (
 	"errors"
+	"fmt"
+	"io/ioutil"
+	"math/rand"
 	"testing"
+	"time"
 
 	"github.com/hyperledger/fabric/core/ledger/internal/version"
 	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/statedb"
@@ -266,6 +270,47 @@ func TestDropErrorPath(t *testing.T) {
 
 	env.DBProvider.Close()
 	require.EqualError(t, env.DBProvider.Drop("testdroperror"), "error while obtaining db iterator: rocksdb: closed")
+}
+
+func BenchmarkRockDB(b *testing.B) {
+	b.Run("rocksdb-sameKey", BenchmarkGetStateSameKeyLittleFilledRocksDB)
+	b.Run("rocksdb-randKey", BenchmarkGetStateRandKeyLittleFilledRocksDB)
+
+}
+
+func BenchmarkGetStateRandKeyLittleFilledRocksDB(b *testing.B) {
+	env := NewBenchDBEnv(b)
+	defer env.Cleanup()
+	db, _ := env.DBProvider.GetDBHandle("testbasicrw", nil)
+	createdKeysAmount := commontests.WriteLittleDataToDB(db)
+	randSource := rand.NewSource(time.Now().UnixNano())
+	r := rand.New(randSource)
+	keys := make([]string, 500)
+	for i := range keys {
+		keys[i] = fmt.Sprintf("key%d", (r.Int() % createdKeysAmount))
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = db.GetState("ns", keys[i%500])
+	}
+}
+
+func BenchmarkGetStateSameKeyLittleFilledRocksDB(b *testing.B) {
+	env := NewBenchDBEnv(b)
+	defer env.Cleanup()
+	db, _ := env.DBProvider.GetDBHandle("testbasicrw", nil)
+	commontests.WriteLittleDataToDB(db)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = db.GetState("ns", "key1")
+	}
+}
+
+//NewBenchDBEnv  instantiates and new rocks db backed TestVDB
+func NewBenchDBEnv(b *testing.B) *TestVDBEnv {
+	dbPath, _ := ioutil.TempDir("", "staterocksdb")
+	dbProvider, _ := NewVersionedDBProvider(dbPath)
+	return &TestVDBEnv{b, dbProvider, dbPath}
 }
 
 type dummyFullScanIter struct {

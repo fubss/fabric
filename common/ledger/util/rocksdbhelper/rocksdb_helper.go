@@ -71,7 +71,7 @@ func (dbInst *DB) Open() {
 	if dbInst.db, err = rocksdb.OpenDb(dbOpts, dbPath); err != nil {
 		panic(fmt.Sprintf("Error opening rocksdb: %s", err))
 	}
-	logger.Infof("DB RocksDB was successfully opened in path: [ %s ]", dbPath)
+	logger.Debugf("DB RocksDB was successfully opened in path: [ %s ]", dbPath)
 	dbInst.dbState = opened
 }
 

@@ -8,7 +8,11 @@ package stateleveldb
 
 import (
 	"errors"
+	fmt "fmt"
+	"io/ioutil"
+	"math/rand"
 	"testing"
+	"time"
 
 	"github.com/hyperledger/fabric/core/ledger/internal/version"
 	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/statedb"
@@ -265,6 +269,47 @@ func TestDropErrorPath(t *testing.T) {
 
 	env.DBProvider.Close()
 	require.EqualError(t, env.DBProvider.Drop("testdroperror"), "internal leveldb error while obtaining db iterator: leveldb: closed")
+}
+
+func BenchmarkLevelDB(b *testing.B) {
+	b.Run("leveldb-sameKey", BenchmarkGetStateSameKeyLittleFilledLevelDB)
+	b.Run("leveldb-randKey", BenchmarkGetStateRandKeyLittleFilledLevelDB)
+
+}
+
+func BenchmarkGetStateRandKeyLittleFilledLevelDB(b *testing.B) {
+	env := NewBenchDBEnv(b)
+	defer env.Cleanup()
+	db, _ := env.DBProvider.GetDBHandle("testbasicrw", nil)
+	createdKeysAmount := commontests.WriteLittleDataToDB(db)
+	randSource := rand.NewSource(time.Now().UnixNano())
+	r := rand.New(randSource)
+	keys := make([]string, 500)
+	for i := range keys {
+		keys[i] = fmt.Sprintf("key%d", (r.Int() % createdKeysAmount))
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = db.GetState("ns", keys[i%500])
+	}
+}
+
+func BenchmarkGetStateSameKeyLittleFilledLevelDB(b *testing.B) {
+	env := NewBenchDBEnv(b)
+	defer env.Cleanup()
+	db, _ := env.DBProvider.GetDBHandle("testbasicrw", nil)
+	commontests.WriteLittleDataToDB(db)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = db.GetState("ns", "key1")
+	}
+}
+
+//NewBenchDBEnv  instantiates and new rocks db backed TestVDB
+func NewBenchDBEnv(b *testing.B) *TestVDBEnv {
+	dbPath, _ := ioutil.TempDir("", "stateleveldb")
+	dbProvider, _ := NewVersionedDBProvider(dbPath)
+	return &TestVDBEnv{b, dbProvider, dbPath}
 }
 
 type dummyFullScanIter struct {

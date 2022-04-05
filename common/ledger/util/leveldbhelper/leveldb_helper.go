@@ -75,7 +75,7 @@ func (dbInst *DB) Open() {
 	if dbInst.db, err = leveldb.OpenFile(dbPath, dbOpts); err != nil {
 		panic(fmt.Sprintf("Error opening leveldb: %s", err))
 	}
-	logger.Infof("DB LevelDB was successfully opened in path: [ %s ]", dbPath)
+	logger.Debugf("DB LevelDB was successfully opened in path: [ %s ]", dbPath)
 	dbInst.dbState = opened
 }
 
