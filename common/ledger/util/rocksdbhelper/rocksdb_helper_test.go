@@ -8,8 +8,11 @@ package rocksdbhelper
 
 import (
 	"fmt"
+	"io/ioutil"
+	"math/rand"
 	"os"
 	"path/filepath"
+	"time"
 
 	//"path/filepath"
 	"testing"
@@ -220,4 +223,95 @@ func TestCreateDBInNonEmptyDir(t *testing.T) {
 		}
 	}()
 	db.Open()
+}
+
+func BenchmarkRocksDBHelper(b *testing.B) {
+	b.Run("get-rocksdb-little-data", BenchmarkGetRocksDBWithLittleData)
+	b.Run("get-rocksdb-big-data", BenchmarkGetRocksDBWithBigData)
+	b.Run("put-rocksdb", BenchmarkPutRocksDB)
+	b.Run("put-rocksdb-type-2", BenchmarkPutRocksDB2)
+}
+
+func BenchmarkGetRocksDBWithLittleData(b *testing.B) {
+	db := createAndOpenDB()
+	db.Put([]byte("key1"), []byte("value1"), true)
+	db.Put([]byte("key2"), []byte("value2"), true)
+	db.Put([]byte("key3"), []byte(""), true)
+	db.Put([]byte("key4"), []byte("value4"), true)
+	db.Put([]byte("key5"), []byte("null"), true)
+	createdKeysAmount := 5
+	randSource := rand.NewSource(time.Now().UnixNano())
+	r := rand.New(randSource)
+	keys := make([][]byte, 500)
+	for i := range keys {
+		keys[i] = []byte(fmt.Sprintf("key%d", (r.Int() % createdKeysAmount)))
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = db.Get(keys[i%500])
+	}
+
+}
+
+func BenchmarkGetRocksDBWithBigData(b *testing.B) {
+	db := createAndOpenDB()
+	keysTotalAmount := 4000
+	keysToGetApproxAmount := 3000
+	for i := 0; i < keysTotalAmount; i++ {
+		_ = db.Put([]byte(createTestKey(i)), []byte(createTestValue("testdb", i)), true)
+
+	}
+	randSource := rand.NewSource(time.Now().UnixNano())
+	r := rand.New(randSource)
+	keysToGet := make([][]byte, keysToGetApproxAmount)
+	for i := range keysToGet {
+		keysToGet[i] = []byte(createTestKey(r.Int() % keysTotalAmount))
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = db.Get(keysToGet[i%keysToGetApproxAmount])
+	}
+
+}
+
+func BenchmarkPutRocksDB(b *testing.B) {
+	db := createAndOpenDB()
+	keysAmount := 100000
+	keys := make([][]byte, keysAmount)
+	values := make([][]byte, keysAmount)
+	for i := 0; i < keysAmount; i++ {
+		key := []byte(createTestKey(i))
+		value := []byte(createTestValue("testdb", i))
+		keys = append(keys, key)
+		values = append(values, value)
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = db.Put(keys[i], values[i], true)
+	}
+}
+
+func BenchmarkPutRocksDB2(b *testing.B) {
+	db := createAndOpenDB()
+	var key []byte
+	var value []byte
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		b.StopTimer()
+		key = []byte(createTestKey(i))
+		value = []byte(createTestValue("testdb", i))
+		b.StartTimer()
+		_ = db.Put(key, value, true)
+	}
+}
+
+func createAndOpenDB() *DB {
+	dbPath, _ := ioutil.TempDir("", "staterocksdb")
+	defer os.RemoveAll(dbPath)
+	db := CreateDB(&Conf{
+		DBPath:         dbPath,
+		ExpectedFormat: "2.0",
+	})
+	db.Open()
+	return db
 }

@@ -577,6 +577,10 @@ func createTestValue(dbname string, i int) string {
 	return fmt.Sprintf("value_%s_%06d", dbname, i)
 }
 
+func createTestValueLen100(dbname string, i int) string {
+	return fmt.Sprintf("value_%s_%s_%10d", dbname, padding100, i)
+}
+
 func createTestKeys(start int, end int) []string {
 	var keys []string
 	for i := start; i <= end; i++ {

@@ -106,7 +106,7 @@ func (dbInst *DB) Close() {
 
 // Get returns the value for the given key
 func (dbInst *DB) Get(key []byte) ([]byte, error) {
-	logger.Debugf("Getting key [%s] from RocksDB...", key)
+	//logger.Debugf("Getting key [%s] from RocksDB...", key)
 	dbInst.mutex.RLock()
 	defer dbInst.mutex.RUnlock()
 	//TODO: delete commened code below, if we never have to uncomment it
@@ -123,7 +123,7 @@ func (dbInst *DB) Get(key []byte) ([]byte, error) {
 	value := make([]byte, len(valueData))
 	copy(value, valueData)
 	rocksdbValue.Free()
-	logger.Debugf("got data [%s]", value)
+	//logger.Debugf("got data [%s]", value)
 	if len(value) == 0 {
 		return nil, nil //module require asserts nil for empty byte slices
 	}
@@ -204,7 +204,7 @@ func (dbInst *DB) GetIterator(startKey []byte, endKey []byte) (*IteratorHelper, 
 
 // WriteBatch writes a batch
 func (dbInst *DB) WriteBatch(batch *rocksdb.WriteBatch, sync bool) error {
-	logger.Debugf("WritingBatch.Count()=[%d]", batch.Count()) //TODO: delete this
+	//logger.Debugf("WritingBatch.Count()=[%d]", batch.Count()) //TODO: delete this
 	dbInst.mutex.RLock()
 	defer dbInst.mutex.RUnlock()
 	wo := rocksdb.NewDefaultWriteOptions()

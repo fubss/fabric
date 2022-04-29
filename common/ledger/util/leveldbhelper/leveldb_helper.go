@@ -75,7 +75,7 @@ func (dbInst *DB) Open() {
 	if dbInst.db, err = leveldb.OpenFile(dbPath, dbOpts); err != nil {
 		panic(fmt.Sprintf("Error opening leveldb: %s", err))
 	}
-	logger.Debugf("DB LevelDB was successfully opened in path: [ %s ]", dbPath)
+	//logger.Debugf("DB LevelDB was successfully opened in path: [ %s ]", dbPath)
 	dbInst.dbState = opened
 }
 
@@ -106,7 +106,7 @@ func (dbInst *DB) Close() {
 
 // Get returns the value for the given key
 func (dbInst *DB) Get(key []byte) ([]byte, error) {
-	logger.Debugf("Getting key [%s] from LevelDB...", key) //TODO remove this
+	//logger.Debugf("Getting key [%s] from LevelDB...", key) //TODO remove this
 	dbInst.mutex.RLock()
 	defer dbInst.mutex.RUnlock()
 	value, err := dbInst.db.Get(key, dbInst.readOpts)
@@ -118,7 +118,7 @@ func (dbInst *DB) Get(key []byte) ([]byte, error) {
 		logger.Errorf("Error retrieving leveldb key [%#v]: %s", key, err)
 		return nil, errors.Wrapf(err, "error retrieving leveldb key [%#v]", key)
 	}
-	logger.Debugf("got data [%s]", value)
+	//logger.Debugf("got data [%s]", value)
 	return value, nil
 }
 
