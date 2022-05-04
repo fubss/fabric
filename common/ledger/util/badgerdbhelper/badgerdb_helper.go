@@ -4,20 +4,22 @@ Copyright IBM Corp. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package leveldbhelper
+package badgerdbhelper
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"sync"
 	"syscall"
 
+	badger "github.com/dgraph-io/badger/v3"
 	"github.com/hyperledger/fabric/common/flogging"
 	"github.com/hyperledger/fabric/internal/fileutil"
 	"github.com/pkg/errors"
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/iterator"
 	"github.com/syndtr/goleveldb/leveldb/opt"
-	goleveldbutil "github.com/syndtr/goleveldb/leveldb/util"
 )
 
 var logger = flogging.MustGetLogger("leveldbhelper")
@@ -25,6 +27,9 @@ var logger = flogging.MustGetLogger("leveldbhelper")
 type dbState int32
 
 const (
+	// ManifestFilename is the filename for the manifest file.
+	ManifestFilename = "MANIFEST"
+
 	closed dbState = iota
 	opened
 )
@@ -32,28 +37,28 @@ const (
 // DB - a wrapper on an actual store
 type DB struct {
 	conf    *Conf
-	db      *leveldb.DB
+	db      *badger.DB
 	dbState dbState
 	mutex   sync.RWMutex
 
-	readOpts        *opt.ReadOptions
-	writeOptsNoSync *opt.WriteOptions
-	writeOptsSync   *opt.WriteOptions
+	//readOpts        *opt.ReadOptions
+	//writeOptsNoSync *opt.WriteOptions
+	//writeOptsSync   *opt.WriteOptions
 }
 
 // CreateDB constructs a `DB`
 func CreateDB(conf *Conf) *DB {
-	readOpts := &opt.ReadOptions{}
-	writeOptsNoSync := &opt.WriteOptions{}
-	writeOptsSync := &opt.WriteOptions{}
-	writeOptsSync.Sync = true
+	//readOpts := &opt.ReadOptions{}
+	//writeOptsNoSync := &opt.WriteOptions{}
+	//writeOptsSync := &opt.WriteOptions{}
+	//writeOptsSync.Sync = true
 
 	return &DB{
-		conf:            conf,
-		dbState:         closed,
-		readOpts:        readOpts,
-		writeOptsNoSync: writeOptsNoSync,
-		writeOptsSync:   writeOptsSync,
+		conf:    conf,
+		dbState: closed,
+		//readOpts:        readOpts,
+		//writeOptsNoSync: writeOptsNoSync,
+		//writeOptsSync:   writeOptsSync,
 	}
 }
 
@@ -64,15 +69,18 @@ func (dbInst *DB) Open() {
 	if dbInst.dbState == opened {
 		return
 	}
-	dbOpts := &opt.Options{}
 	dbPath := dbInst.conf.DBPath
 	var err error
 	var dirEmpty bool
 	if dirEmpty, err = fileutil.CreateDirIfMissing(dbPath); err != nil {
 		panic(fmt.Sprintf("Error creating dir if missing: %s", err))
 	}
-	dbOpts.ErrorIfMissing = !dirEmpty
-	if dbInst.db, err = leveldb.OpenFile(dbPath, dbOpts); err != nil {
+	if !dirEmpty {
+		if _, err := os.Stat(filepath.Join(dbPath, ManifestFilename)); err != nil {
+			panic(fmt.Sprintf("Error opening badgerdb: %s", err))
+		}
+	}
+	if dbInst.db, err = badger.Open(badger.DefaultOptions(dbPath)); err != nil {
 		panic(fmt.Sprintf("Error opening leveldb: %s", err))
 	}
 	dbInst.dbState = opened
@@ -82,11 +90,17 @@ func (dbInst *DB) Open() {
 func (dbInst *DB) IsEmpty() (bool, error) {
 	dbInst.mutex.RLock()
 	defer dbInst.mutex.RUnlock()
-	itr := dbInst.db.NewIterator(&goleveldbutil.Range{}, dbInst.readOpts)
-	defer itr.Release()
-	hasItems := itr.Next()
+	var hasItems bool
+	err := dbInst.db.View(func(txn *badger.Txn) error {
+		opts := badger.DefaultIteratorOptions
+		opts.PrefetchValues = false
+		it := txn.NewIterator(opts)
+		defer it.Close()
+		hasItems = it.Valid()
+		return nil
+	})
 	return !hasItems,
-		errors.Wrapf(itr.Error(), "error while trying to see if the leveldb at path [%s] is empty", dbInst.conf.DBPath)
+		errors.Wrapf(err, "error while trying to see if the leveldb at path [%s] is empty", dbInst.conf.DBPath)
 }
 
 // Close closes the underlying db
