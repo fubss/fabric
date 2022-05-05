@@ -56,6 +56,7 @@ require (
 	github.com/syndtr/goleveldb v1.0.1-0.20210305035536-64b5b1c73954
 	github.com/tedsuo/ifrit v0.0.0-20180802180643-bea94bb476cc
 	github.com/willf/bitset v1.1.10
+	go.etcd.io/bbolt v1.3.1-etcd.7
 	go.etcd.io/etcd v0.5.0-alpha.5.0.20181228115726-23731bf9ba55
 	go.uber.org/multierr v1.6.0 // indirect
 	go.uber.org/zap v1.16.0

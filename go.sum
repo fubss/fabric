@@ -326,6 +326,7 @@ github.com/urfave/cli v1.22.2/go.mod h1:Gos4lmkARVdJ6EkW0WaNv/tZAAMe9V7XWyB60NtX
 github.com/willf/bitset v1.1.10 h1:NotGKqX0KwQ72NUzqrjZq5ipPNDQex9lo3WpaS8L2sc=
 github.com/willf/bitset v1.1.10/go.mod h1:RjeCKbqT1RxIR/KWY6phxZiaY1IyutSBfGjNPySAYV4=
 github.com/xiang90/probing v0.0.0-20160813154853-07dd2e8dfe18/go.mod h1:UETIi67q53MR2AWcXfiuqkDkRtnGDLqkBTpCHuJHxtU=
+go.etcd.io/bbolt v1.3.1-etcd.7 h1:M0l89sIuZ+RkW0rLbUsmxescVzLwLUs+Kvks+0jeHdM=
 go.etcd.io/bbolt v1.3.1-etcd.7/go.mod h1:IbVyRI1SCnLcuJnV2u8VeU0CEYM7e686BmAb1XKL+uU=
 go.etcd.io/etcd v0.5.0-alpha.5.0.20181228115726-23731bf9ba55 h1:YTC92EdyM9lnD0aVRqN28/CILPLZSzdmoomOFAjxBbk=
 go.etcd.io/etcd v0.5.0-alpha.5.0.20181228115726-23731bf9ba55/go.mod h1:weASp41xM3dk0YHg1s/W8ecdGP5G4teSTMBPpYAaUgA=
