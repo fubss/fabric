@@ -17,9 +17,6 @@ import (
 	"github.com/hyperledger/fabric/common/flogging"
 	"github.com/hyperledger/fabric/internal/fileutil"
 	"github.com/pkg/errors"
-	"github.com/syndtr/goleveldb/leveldb"
-	"github.com/syndtr/goleveldb/leveldb/iterator"
-	"github.com/syndtr/goleveldb/leveldb/opt"
 )
 
 var logger = flogging.MustGetLogger("leveldbhelper")
@@ -81,7 +78,7 @@ func (dbInst *DB) Open() {
 		}
 	}
 	if dbInst.db, err = badger.Open(badger.DefaultOptions(dbPath)); err != nil {
-		panic(fmt.Sprintf("Error opening leveldb: %s", err))
+		panic(fmt.Sprintf("Error opening badgerdb: %s", err))
 	}
 	dbInst.dbState = opened
 }
@@ -100,7 +97,7 @@ func (dbInst *DB) IsEmpty() (bool, error) {
 		return nil
 	})
 	return !hasItems,
-		errors.Wrapf(err, "error while trying to see if the leveldb at path [%s] is empty", dbInst.conf.DBPath)
+		errors.Wrapf(err, "error while trying to see if the badgerdb at path [%s] is empty", dbInst.conf.DBPath)
 }
 
 // Close closes the underlying db
@@ -111,7 +108,7 @@ func (dbInst *DB) Close() {
 		return
 	}
 	if err := dbInst.db.Close(); err != nil {
-		logger.Errorf("Error closing leveldb: %s", err)
+		logger.Errorf("Error closing badgerdb: %s", err)
 	}
 	dbInst.dbState = closed
 }
@@ -120,14 +117,25 @@ func (dbInst *DB) Close() {
 func (dbInst *DB) Get(key []byte) ([]byte, error) {
 	dbInst.mutex.RLock()
 	defer dbInst.mutex.RUnlock()
-	value, err := dbInst.db.Get(key, dbInst.readOpts)
-	if err == leveldb.ErrNotFound {
+	var value []byte
+	err := dbInst.db.View(func(txn *badger.Txn) error {
+		item, err := txn.Get(key)
+		if err != nil {
+			return err
+		}
+		value, err = item.ValueCopy(nil)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+	if errors.Is(err, badger.ErrKeyNotFound) {
 		value = nil
 		err = nil
 	}
 	if err != nil {
-		logger.Errorf("Error retrieving leveldb key [%#v]: %s", key, err)
-		return nil, errors.Wrapf(err, "error retrieving leveldb key [%#v]", key)
+		logger.Errorf("Error retrieving badgerdb key [%#v]: %s", key, err)
+		return nil, errors.Wrapf(err, "error retrieving badgerdb key [%#v]", key)
 	}
 	return value, nil
 }
@@ -136,14 +144,17 @@ func (dbInst *DB) Get(key []byte) ([]byte, error) {
 func (dbInst *DB) Put(key []byte, value []byte, sync bool) error {
 	dbInst.mutex.RLock()
 	defer dbInst.mutex.RUnlock()
-	wo := dbInst.writeOptsNoSync
-	if sync {
+	//wo := dbInst.writeOptsNoSync
+	/*if sync {
 		wo = dbInst.writeOptsSync
-	}
-	err := dbInst.db.Put(key, value, wo)
+	}*/
+	err := dbInst.db.Update(func(txn *badger.Txn) error {
+		err := txn.Set(key, value)
+		return err
+	})
 	if err != nil {
-		logger.Errorf("Error writing leveldb key [%#v]", key)
-		return errors.Wrapf(err, "error writing leveldb key [%#v]", key)
+		logger.Errorf("Error writing badgerdb key [%#v]", key)
+		return errors.Wrapf(err, "error writing badgerdb key [%#v]", key)
 	}
 	return nil
 }
@@ -152,37 +163,61 @@ func (dbInst *DB) Put(key []byte, value []byte, sync bool) error {
 func (dbInst *DB) Delete(key []byte, sync bool) error {
 	dbInst.mutex.RLock()
 	defer dbInst.mutex.RUnlock()
-	wo := dbInst.writeOptsNoSync
+	/*wo := dbInst.writeOptsNoSync
 	if sync {
 		wo = dbInst.writeOptsSync
-	}
-	err := dbInst.db.Delete(key, wo)
+	}*/
+	err := dbInst.db.Update(func(txn *badger.Txn) error {
+		err := txn.Delete(key)
+		return err
+	})
 	if err != nil {
-		logger.Errorf("Error deleting leveldb key [%#v]", key)
-		return errors.Wrapf(err, "error deleting leveldb key [%#v]", key)
+		logger.Errorf("Error deleting badgerdb key [%#v]", key)
+		return errors.Wrapf(err, "error deleting badgerdb key [%#v]", key)
 	}
 	return nil
+}
+
+type RangeIterator struct {
+	iterator *badger.Iterator
+	startKey []byte
+	endKey   []byte
 }
 
 // GetIterator returns an iterator over key-value store. The iterator should be released after the use.
 // The resultset contains all the keys that are present in the db between the startKey (inclusive) and the endKey (exclusive).
 // A nil startKey represents the first available key and a nil endKey represent a logical key after the last available key
-func (dbInst *DB) GetIterator(startKey []byte, endKey []byte) iterator.Iterator {
+func (dbInst *DB) GetIterator(startKey []byte, endKey []byte) RangeIterator {
 	dbInst.mutex.RLock()
 	defer dbInst.mutex.RUnlock()
-	return dbInst.db.NewIterator(&goleveldbutil.Range{Start: startKey, Limit: endKey}, dbInst.readOpts)
+	txn := dbInst.db.NewTransaction(true)
+	defer txn.Discard()
+	/*err := dbInst.db.View(func(txn *badger.Txn) error {
+		i = txn.NewKeyIterator(startKey, badger.DefaultIteratorOptions)
+		defer i.Close()
+		return nil
+	})
+	if err != nil {
+		logger.Errorf("Error getting badgerdb iterator with startKey [%#v] and endKey [%#v]", startKey, endKey)
+		panic(errors.Wrapf(err, "error getting badgerdb iterator with startKey [%#v] and endKey [%#v]", startKey, endKey))
+	}*/
+	return RangeIterator{
+		iterator: txn.NewIterator(badger.DefaultIteratorOptions),
+		startKey: startKey,
+		endKey:   endKey,
+	}
 }
 
 // WriteBatch writes a batch
-func (dbInst *DB) WriteBatch(batch *leveldb.Batch, sync bool) error {
+func (dbInst *DB) WriteBatch(batch *badger.WriteBatch, sync bool) error {
 	dbInst.mutex.RLock()
 	defer dbInst.mutex.RUnlock()
-	wo := dbInst.writeOptsNoSync
+	/*wo := dbInst.writeOptsNoSync
 	if sync {
 		wo = dbInst.writeOptsSync
-	}
-	if err := dbInst.db.Write(batch, wo); err != nil {
-		return errors.Wrap(err, "error writing batch to leveldb")
+	}*/
+	if err := batch.Flush(); err != nil {
+		return errors.Wrap(err, "error writing batch to badgerdb")
 	}
 	return nil
 }
@@ -192,7 +227,7 @@ func (dbInst *DB) WriteBatch(batch *leveldb.Batch, sync bool) error {
 // there is no need for the semaphore to synchronize the
 // FileLock usage.
 type FileLock struct {
-	db       *leveldb.DB
+	db       *badger.DB
 	filePath string
 }
 
@@ -212,15 +247,19 @@ func NewFileLock(filePath string) *FileLock {
 // functionality to acquire and release file lock as the leveldb
 // supports this for Windows, Solaris, and Unix.
 func (f *FileLock) Lock() error {
-	dbOpts := &opt.Options{}
+	//dbOpts := &opt.Options{}
 	var err error
 	var dirEmpty bool
 	if dirEmpty, err = fileutil.CreateDirIfMissing(f.filePath); err != nil {
 		panic(fmt.Sprintf("Error creating dir if missing: %s", err))
 	}
-	dbOpts.ErrorIfMissing = !dirEmpty
-	db, err := leveldb.OpenFile(f.filePath, dbOpts)
-	if err != nil && err == syscall.EAGAIN {
+	if !dirEmpty {
+		if _, err := os.Stat(filepath.Join(f.filePath, ManifestFilename)); err != nil {
+			panic(fmt.Sprintf("Error opening badgerdb: %s", err))
+		}
+	}
+	db, err := badger.Open(badger.DefaultOptions(f.filePath))
+	if errors.Is(err, syscall.EAGAIN) {
 		return errors.Errorf("lock is already acquired on file %s", f.filePath)
 	}
 	if err != nil {
