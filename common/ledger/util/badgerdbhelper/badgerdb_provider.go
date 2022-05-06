@@ -11,10 +11,10 @@ import (
 	"fmt"
 	"sync"
 
+	badger "github.com/dgraph-io/badger/v3"
 	"github.com/hyperledger/fabric/common/ledger/dataformat"
-	"github.com/pkg/errors"
-	"github.com/syndtr/goleveldb/leveldb"
-	"github.com/syndtr/goleveldb/leveldb/iterator"
+	//"github.com/syndtr/goleveldb/leveldb"
+	//"github.com/syndtr/goleveldb/leveldb/iterator"
 )
 
 const (
@@ -107,7 +107,7 @@ func openDBAndCheckFormat(conf *Conf) (d *DB, e error) {
 		return nil, &dataformat.ErrFormatMismatch{
 			ExpectedFormat: conf.ExpectedFormat,
 			Format:         string(formatVersion),
-			DBInfo:         fmt.Sprintf("leveldb at [%s]", conf.DBPath),
+			DBInfo:         fmt.Sprintf("badgerdb at [%s]", conf.DBPath),
 		}
 	}
 	logger.Debug("format is latest, nothing to do")
@@ -177,22 +177,22 @@ func (h *DBHandle) deleteAll() error {
 	if err != nil {
 		return err
 	}
-	defer iter.Release()
+	defer iter.iterator.Close()
 
 	// use leveldb iterator directly to be more efficient
-	dbIter := iter.Iterator
+	dbIter := iter.iterator
 
 	// This is common code shared by all the leveldb instances. Because each leveldb has its own key size pattern,
 	// each batch is limited by memory usage instead of number of keys. Once the batch memory usage reaches maxBatchSize,
 	// the batch will be committed.
 	numKeys := 0
 	batchSize := 0
-	batch := &leveldb.Batch{}
-	for dbIter.Next() {
-		if err := dbIter.Error(); err != nil {
+	batch := &badger.WriteBatch{}
+	for dbIter.Valid() {
+		/*if err := dbIter.Error(); err != nil {
 			return errors.Wrap(err, "internal leveldb error while retrieving data from db iterator")
-		}
-		key := dbIter.Key()
+		}*/
+		key := dbIter.Item().Key()
 		numKeys++
 		batchSize = batchSize + len(key)
 		batch.Delete(key)
@@ -200,12 +200,12 @@ func (h *DBHandle) deleteAll() error {
 			if err := h.db.WriteBatch(batch, true); err != nil {
 				return err
 			}
-			logger.Infof("Have removed %d entries for channel %s in leveldb %s", numKeys, h.dbName, h.db.conf.DBPath)
+			logger.Infof("Have removed %d entries for channel %s in badgerdb %s", numKeys, h.dbName, h.db.conf.DBPath)
 			batchSize = 0
-			batch.Reset()
+			batch.Cancel()
 		}
 	}
-	if batch.Len() > 0 {
+	if err = batch.Error(); err == nil {
 		return h.db.WriteBatch(batch, true)
 	}
 	return nil
@@ -217,11 +217,11 @@ func (h *DBHandle) IsEmpty() (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	defer itr.Release()
+	defer itr.iterator.Close()
 
-	if err := itr.Error(); err != nil {
+	/*if err := itr.Error(); err != nil {
 		return false, errors.WithMessagef(itr.Error(), "internal leveldb error while obtaining next entry from iterator")
-	}
+	}*/
 
 	return !itr.Next(), nil
 }
@@ -229,17 +229,17 @@ func (h *DBHandle) IsEmpty() (bool, error) {
 // NewUpdateBatch returns a new UpdateBatch that can be used to update the db
 func (h *DBHandle) NewUpdateBatch() *UpdateBatch {
 	return &UpdateBatch{
-		dbName: h.dbName,
-		Batch:  &leveldb.Batch{},
+		dbName:     h.dbName,
+		WriteBatch: &badger.WriteBatch{},
 	}
 }
 
 // WriteBatch writes a batch in an atomic way
 func (h *DBHandle) WriteBatch(batch *UpdateBatch, sync bool) error {
-	if batch == nil || batch.Len() == 0 {
+	if batch == nil || batch.Error() != nil {
 		return nil
 	}
-	if err := h.db.WriteBatch(batch.Batch, sync); err != nil {
+	if err := h.db.WriteBatch(batch.WriteBatch, sync); err != nil {
 		return err
 	}
 	return nil
@@ -257,11 +257,11 @@ func (h *DBHandle) GetIterator(startKey []byte, endKey []byte) (*Iterator, error
 	}
 	logger.Debugf("Getting iterator for range [%#v] - [%#v]", sKey, eKey)
 	itr := h.db.GetIterator(sKey, eKey)
-	if err := itr.Error(); err != nil {
+	/*if err := itr.Error(); err != nil {
 		itr.Release()
 		return nil, errors.Wrapf(err, "internal leveldb error while obtaining db iterator")
-	}
-	return &Iterator{h.dbName, itr}, nil
+	}*/
+	return &Iterator{h.dbName, itr, true}, nil
 }
 
 // Close closes the DBHandle after its db data have been deleted
@@ -273,7 +273,7 @@ func (h *DBHandle) Close() {
 
 // UpdateBatch encloses the details of multiple `updates`
 type UpdateBatch struct {
-	*leveldb.Batch
+	*badger.WriteBatch
 	dbName string
 }
 
@@ -282,23 +282,39 @@ func (b *UpdateBatch) Put(key []byte, value []byte) {
 	if value == nil {
 		panic("Nil value not allowed")
 	}
-	b.Batch.Put(constructLevelKey(b.dbName, key), value)
+	b.Put(constructLevelKey(b.dbName, key), value)
 }
 
 // Delete deletes a Key and associated value
 func (b *UpdateBatch) Delete(key []byte) {
-	b.Batch.Delete(constructLevelKey(b.dbName, key))
+	b.WriteBatch.Delete(constructLevelKey(b.dbName, key))
 }
 
 // Iterator extends actual leveldb iterator
 type Iterator struct {
 	dbName string
-	iterator.Iterator
+	RangeIterator
+	justOpened bool
 }
 
 // Key wraps actual leveldb iterator method
 func (itr *Iterator) Key() []byte {
-	return retrieveAppKey(itr.Iterator.Key())
+	return retrieveAppKey(itr.iterator.Item().Key())
+}
+
+// Next() wraps Badger's functions to make function similar Leveldb Next
+func (itr *Iterator) Next() bool {
+	if !itr.iterator.Valid() {
+		return false
+	}
+
+	// Check does iterator need start from startKey
+	if itr.justOpened {
+		itr.iterator.Seek(itr.startKey)
+		itr.justOpened = false
+	}
+	itr.iterator.Next()
+	return true
 }
 
 // Seek moves the iterator to the first key/value pair
@@ -306,7 +322,8 @@ func (itr *Iterator) Key() []byte {
 // It returns whether such pair exist.
 func (itr *Iterator) Seek(key []byte) bool {
 	levelKey := constructLevelKey(itr.dbName, key)
-	return itr.Iterator.Seek(levelKey)
+	itr.iterator.Seek(levelKey)
+	return itr.iterator.Valid()
 }
 
 func constructLevelKey(dbName string, key []byte) []byte {
