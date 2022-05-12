@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const testDBPath = "/tmp/fabric/ledgertests/util/leveldbhelper"
+const testDBPath = "/tmp/fabric/ledgertests/util/badgerdbhelper"
 
 type testDBEnv struct {
 	t    *testing.T

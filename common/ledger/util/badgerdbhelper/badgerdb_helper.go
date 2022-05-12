@@ -11,7 +11,6 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
-	"syscall"
 
 	badger "github.com/dgraph-io/badger/v3"
 	"github.com/hyperledger/fabric/common/flogging"
@@ -88,11 +87,12 @@ func (dbInst *DB) IsEmpty() (bool, error) {
 	dbInst.mutex.RLock()
 	defer dbInst.mutex.RUnlock()
 	var hasItems bool
+	opts := badger.DefaultIteratorOptions
+	opts.PrefetchValues = false
 	err := dbInst.db.View(func(txn *badger.Txn) error {
-		opts := badger.DefaultIteratorOptions
-		opts.PrefetchValues = false
 		it := txn.NewIterator(opts)
 		defer it.Close()
+		it.Rewind()
 		hasItems = it.Valid()
 		return nil
 	})
@@ -184,6 +184,23 @@ type RangeIterator struct {
 	endKey   []byte
 }
 
+// Next() wraps Badger's functions to make function similar Leveldb Next
+/*func (itr *RangeIterator) Next() bool {
+
+	// Check does iterator need start from startKey
+	if itr.justOpened {
+		itr.iterator.Seek(itr.startKey)
+		itr.justOpened = false
+	}
+	itr.iterator.Next()
+	return itr.iterator.Valid()
+}*/
+
+// Key() wraps Badger's functions to make function similar Leveldb Key
+func (itr *RangeIterator) Key() []byte {
+	return itr.iterator.Item().Key()
+}
+
 // GetIterator returns an iterator over key-value store. The iterator should be released after the use.
 // The resultset contains all the keys that are present in the db between the startKey (inclusive) and the endKey (exclusive).
 // A nil startKey represents the first available key and a nil endKey represent a logical key after the last available key
@@ -201,8 +218,10 @@ func (dbInst *DB) GetIterator(startKey []byte, endKey []byte) RangeIterator {
 		logger.Errorf("Error getting badgerdb iterator with startKey [%#v] and endKey [%#v]", startKey, endKey)
 		panic(errors.Wrapf(err, "error getting badgerdb iterator with startKey [%#v] and endKey [%#v]", startKey, endKey))
 	}*/
+	itr := txn.NewIterator(badger.DefaultIteratorOptions)
+	defer itr.Close()
 	return RangeIterator{
-		iterator: txn.NewIterator(badger.DefaultIteratorOptions),
+		iterator: itr,
 		startKey: startKey,
 		endKey:   endKey,
 	}
@@ -259,7 +278,7 @@ func (f *FileLock) Lock() error {
 		}
 	}
 	db, err := badger.Open(badger.DefaultOptions(f.filePath))
-	if errors.Is(err, syscall.EAGAIN) {
+	if fmt.Sprint(err) == fmt.Sprintf("Cannot acquire directory lock on \"%s\".  Another process is using this Badger database. error: resource temporarily unavailable", f.filePath) {
 		return errors.Errorf("lock is already acquired on file %s", f.filePath)
 	}
 	if err != nil {

@@ -13,10 +13,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"github.com/syndtr/goleveldb/leveldb"
 )
 
-func TestLevelDBHelperWriteWithoutOpen(t *testing.T) {
+func TestBadgerDBHelperWriteWithoutOpen(t *testing.T) {
 	env := newTestDBEnv(t, testDBPath)
 	defer env.cleanup()
 	db := env.db
@@ -28,7 +27,7 @@ func TestLevelDBHelperWriteWithoutOpen(t *testing.T) {
 	db.Put([]byte("key"), []byte("value"), false)
 }
 
-func TestLevelDBHelperReadWithoutOpen(t *testing.T) {
+func TestBadgerDBHelperReadWithoutOpen(t *testing.T) {
 	env := newTestDBEnv(t, testDBPath)
 	defer env.cleanup()
 	db := env.db
@@ -40,7 +39,7 @@ func TestLevelDBHelperReadWithoutOpen(t *testing.T) {
 	db.Get([]byte("key"))
 }
 
-func TestLevelDBHelper(t *testing.T) {
+func TestBadgerDBHelper(t *testing.T) {
 	env := newTestDBEnv(t, testDBPath)
 	// defer env.cleanup()
 	db := env.db
@@ -85,9 +84,9 @@ func TestLevelDBHelper(t *testing.T) {
 	require.NoError(t, err)
 	require.False(t, IsEmpty)
 
-	batch := &leveldb.Batch{}
-	batch.Put([]byte("key1"), []byte("value1"))
-	batch.Put([]byte("key2"), []byte("value2"))
+	batch := db.db.NewWriteBatch()
+	batch.Set([]byte("key1"), []byte("value1"))
+	batch.Set([]byte("key2"), []byte("value2"))
 	batch.Delete([]byte("key3"))
 	db.WriteBatch(batch, true)
 
@@ -105,7 +104,7 @@ func TestLevelDBHelper(t *testing.T) {
 
 	keys := []string{}
 	itr := db.GetIterator(nil, nil)
-	for itr.Next() {
+	for itr.iterator.Rewind(); itr.iterator.Valid(); itr.iterator.Next() {
 		keys = append(keys, string(itr.Key()))
 	}
 	require.Equal(t, []string{"key1", "key2"}, keys)

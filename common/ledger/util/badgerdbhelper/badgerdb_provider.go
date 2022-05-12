@@ -282,7 +282,9 @@ func (b *UpdateBatch) Put(key []byte, value []byte) {
 	if value == nil {
 		panic("Nil value not allowed")
 	}
-	b.Put(constructLevelKey(b.dbName, key), value)
+	if err := b.Set(constructLevelKey(b.dbName, key), value); err != nil {
+		logger.Errorf("Error while setting key [%#v] and value [%#v]: %#v", constructLevelKey(b.dbName, key), value, err)
+	}
 }
 
 // Delete deletes a Key and associated value
@@ -315,6 +317,30 @@ func (itr *Iterator) Next() bool {
 	}
 	itr.iterator.Next()
 	return true
+}
+
+// Release wraps Badger's function to make function similar Leveldb
+func (itr *Iterator) Release() {
+	itr.iterator.Close()
+}
+
+// First wraps Badger's function to make function similar Leveldb
+func (itr *Iterator) First() bool {
+	itr.iterator.Rewind()
+	return itr.iterator.Valid()
+}
+
+func (itr *Iterator) Valid() bool {
+	return itr.iterator.Valid()
+}
+
+func (itr *Iterator) Value() []byte {
+	v, err := itr.iterator.Item().ValueCopy(nil)
+	if err != nil {
+		logger.Errorf("Error while getting ValueCopy: %#v", err)
+		return nil
+	}
+	return v
 }
 
 // Seek moves the iterator to the first key/value pair
