@@ -149,6 +149,8 @@ func (m *Mgr) ImportFromSnapshot(ledgerID string, dir string) error {
 	}
 
 	batch := db.NewUpdateBatch()
+	logger.Debugf("(m *Mgr) ImportFromSnapshot().NewUpdateBatch(): %s", db.DbType)
+
 	currentBatchSize := 0
 	for i := uint64(0); i < numCollectionConfigs; i++ {
 		key, err := collectionConfigData.DecodeBytes()

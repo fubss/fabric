@@ -21,11 +21,11 @@ type testDBEnv struct {
 	db   *DB
 }
 
-/*type testDBProviderEnv struct {
+type testDBProviderEnv struct {
 	t        *testing.T
 	path     string
 	provider *Provider
-}*/
+}
 
 func newTestDBEnv(t *testing.T, path string) *testDBEnv {
 	testDBEnv := &testDBEnv{t: t, path: path}
@@ -34,7 +34,7 @@ func newTestDBEnv(t *testing.T, path string) *testDBEnv {
 	return testDBEnv
 }
 
-/*func newTestProviderEnv(t *testing.T, path string) *testDBProviderEnv {
+func newTestProviderEnv(t *testing.T, path string) *testDBProviderEnv {
 	testProviderEnv := &testDBProviderEnv{t: t, path: path}
 	testProviderEnv.cleanup()
 	var err error
@@ -43,7 +43,7 @@ func newTestDBEnv(t *testing.T, path string) *testDBEnv {
 		panic(err)
 	}
 	return testProviderEnv
-}*/
+}
 
 func (dbEnv *testDBEnv) cleanup() {
 	if dbEnv.db != nil {
@@ -52,9 +52,9 @@ func (dbEnv *testDBEnv) cleanup() {
 	require.NoError(dbEnv.t, os.RemoveAll(dbEnv.path))
 }
 
-/*func (providerEnv *testDBProviderEnv) cleanup() {
+func (providerEnv *testDBProviderEnv) cleanup() {
 	if providerEnv.provider != nil {
 		providerEnv.provider.Close()
 	}
 	require.NoError(providerEnv.t, os.RemoveAll(providerEnv.path))
-}*/
+}

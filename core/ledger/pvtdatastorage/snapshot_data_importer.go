@@ -348,6 +348,8 @@ func (u *dbUpdates) numKVHashesEntries() int {
 
 func (u *dbUpdates) commitToDB(db *leveldbhelper.DBHandle) error {
 	batch := db.NewUpdateBatch()
+	logger.Debugf("(s *dbUpdates) commitToDB().NewUpdateBatch(): %s", db.DbType)
+
 	for k, v := range u.elgMissingDataEntries {
 		encKey := encodeElgPrioMissingDataKey(&k)
 		encVal, err := encodeMissingDataValue(v)
@@ -407,6 +409,7 @@ func newSnapshotRowsSorter(tempDirRoot string) (*snapshotRowsSorter, error) {
 	}
 	db := dbProvider.GetDBHandle("")
 	batch := db.NewUpdateBatch()
+	logger.Debugf("newSnapshotRowsSorter().NewUpdateBatch(): %s", db.DbType)
 	return &snapshotRowsSorter{
 		tempDir:    tempDir,
 		dbProvider: dbProvider,

@@ -201,19 +201,21 @@ type IteratorHelper struct {
 // GetIterator returns an iterator over key-value store. The iterator should be released after the use.
 // The resultset contains all the keys that are present in the db between the startKey (inclusive) and the endKey (exclusive).
 // A nil startKey represents the first available key and a nil endKey represent a logical key after the last available key
-func (dbInst *DB) GetIterator(startKey []byte, endKey []byte) (*bolt.Cursor, *bolt.Tx) {
-	logger.Debugf("Getting new RocksDB Iterator... for start key: [%s (%+v) and end key: [%s (%+v)]", startKey, startKey, endKey, endKey)
+// TODO: close iterator somewhere
+func (dbInst *DB) GetIterator(startKey []byte, endKey []byte) (*bolt.Cursor, *bolt.Tx, []byte, []byte, error) {
+	//logger.Debugf("Getting new BoltDB Iterator... for start key: [%s (%+v) and end key: [%s (%+v)]", startKey, startKey, endKey, endKey)
 	dbInst.mutex.RLock()
 	defer dbInst.mutex.RUnlock()
 	tx, err := dbInst.db.Begin(false)
 	if err != nil {
-		logger.Errorf("Error after creating bolt tx: %+v", err)
+		logger.Errorf("Error after creating boltdb tx: %+v", err)
+		return nil, tx, nil, nil, err
 	}
 	c := tx.Bucket([]byte("fabric")).Cursor()
-	c.Seek(startKey)
+	seekedKey, seekedValue := c.Seek(startKey)
 	//return dbInst.db.NewIterator(&goleveldbutil.Range{Start: startKey, Limit: endKey}, dbInst.readOpts)
 
-	return c, tx
+	return c, tx, seekedKey, seekedValue, nil
 }
 
 // WriteBatch writes a boltdb tx, not a boltdb batch.
@@ -234,10 +236,10 @@ func (dbInst *DB) WriteBatch(tx *bolt.Tx, sync bool) error {
 
 func (dbInst *DB) setSyncOffOnce() {
 	dbInst.db.NoSync = false
-	logger.Debugf("dbInst.db.NoSync = false")
+	//logger.Debugf("dbInst.db.NoSync = false")
 	defer func() {
 		dbInst.db.NoSync = true
-		logger.Debugf("dbInst.db.NoSync = true")
+		//logger.Debugf("dbInst.db.NoSync = true")
 	}()
 }
 

@@ -35,6 +35,7 @@ func (h *metadataHint) metadataEverUsedFor(namespace string) bool {
 
 func (h *metadataHint) setMetadataUsedFlag(updates *UpdateBatch) error {
 	batch := h.bookkeeper.NewUpdateBatch()
+	logger.Debugf("(h *metadataHint)  setMetadataUsedFlag().NewUpdateBatch(): %s", h.bookkeeper.DbType)
 	for ns := range filterNamespacesThatHasMetadata(updates) {
 		if h.cache[ns] {
 			continue
@@ -47,6 +48,7 @@ func (h *metadataHint) setMetadataUsedFlag(updates *UpdateBatch) error {
 
 func (h *metadataHint) importNamespacesThatUseMetadata(namespaces map[string]struct{}) error {
 	batch := h.bookkeeper.NewUpdateBatch()
+	logger.Debugf("(h *metadataHint)  importNamespacesThatUseMetadata().NewUpdateBatch(): %s", h.bookkeeper.DbType)
 	for ns := range namespaces {
 		batch.Put([]byte(ns), []byte{})
 	}

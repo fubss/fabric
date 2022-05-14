@@ -226,6 +226,7 @@ func (s *Store) initState() error {
 	if batchPending {
 		committingBlockNum := s.nextBlockNum()
 		batch := s.db.NewUpdateBatch()
+		logger.Debugf("(s *Store) initState().NewUpdateBatch(): %s", s.db.DbType)
 		batch.Put(lastCommittedBlkkey, encodeLastCommittedBlockVal(committingBlockNum))
 		batch.Delete(pendingCommitKey)
 		if err := s.db.WriteBatch(batch, true); err != nil {
@@ -262,6 +263,7 @@ func (s *Store) Commit(blockNum uint64, pvtData []*ledger.TxPvtData, missingPvtD
 	}
 
 	batch := s.db.NewUpdateBatch()
+	logger.Debugf("(s *Store) Commit().NewUpdateBatch(): %s", s.db.DbType)
 	var err error
 	var key, val []byte
 
@@ -377,6 +379,7 @@ func (s *Store) getLastUpdatedOldBlocksList() ([]uint64, error) {
 // ResetLastUpdatedOldBlocksList removes the `lastUpdatedOldBlocksList` entry from the store
 func (s *Store) ResetLastUpdatedOldBlocksList() error {
 	batch := s.db.NewUpdateBatch()
+	logger.Debugf("(s *Store) ResetLastUpdatedOldBlocksList().NewUpdateBatch(): %s", s.db.DbType)
 	batch.Delete(lastUpdatedOldBlocksKey)
 	if err := s.db.WriteBatch(batch, true); err != nil {
 		return err
@@ -588,6 +591,7 @@ func (s *Store) ProcessCollsEligibilityEnabled(committingBlk uint64, nsCollMap m
 	if err != nil {
 		return err
 	}
+	logger.Debugf("(s *Store) ProcessCollsEligibilityEnabled().NewUpdateBatch(): %s", s.db.DbType)
 	batch := s.db.NewUpdateBatch()
 	batch.Put(key, val)
 	if err = s.db.WriteBatch(batch, true); err != nil {
@@ -620,6 +624,7 @@ func (s *Store) purgeExpiredData(minBlkNum, maxBlkNum uint64) error {
 	}
 
 	batch := s.db.NewUpdateBatch()
+	logger.Debugf("(s *Store) purgeExpiredData().NewUpdateBatch(): %s", s.db.DbType)
 	for _, expiryEntry := range expiryEntries {
 		batch.Delete(encodeExpiryKey(expiryEntry.key))
 		dataKeys, missingDataKeys, bootKVHashesKeys := deriveKeys(expiryEntry)
@@ -709,6 +714,7 @@ func (s *Store) processCollElgEvents() error {
 	}
 	defer eventItr.Release()
 	batch := s.db.NewUpdateBatch()
+	logger.Debugf("(s *Store) processCollElgEvents().NewUpdateBatch(): %s", s.db.DbType)
 	totalEntriesConverted := 0
 
 	for eventItr.Next() {

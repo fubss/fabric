@@ -57,6 +57,7 @@ func newExpiryKeeper(ledgerid string, provider *bookkeeping.Provider) *expiryKee
 // both are expiring with the commit of block number 50.
 func (ek *expiryKeeper) update(toTrack []*expiryInfo, toClear []*expiryInfoKey) error {
 	updateBatch := ek.db.NewUpdateBatch()
+	logger.Debugf("expiryKeeper.update().NewUpdateBatch(): %s", ek.db.DbType)
 	for _, expinfo := range toTrack {
 		k, v, err := encodeKV(expinfo)
 		if err != nil {

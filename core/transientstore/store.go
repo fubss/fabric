@@ -316,7 +316,7 @@ func Drop(providerPath, ledgerID string) error {
 func (s *Store) Persist(txid string, blockHeight uint64,
 	privateSimulationResultsWithConfig *transientstore.TxPvtReadWriteSetWithConfigInfo) error {
 	logger.Debugf("Persisting private data to transient store for txid [%s] at block height [%d]", txid, blockHeight)
-
+	logger.Debugf("(s *Store) Persist().NewUpdateBatch(): %s", s.db.DbType)
 	dbBatch := s.db.NewUpdateBatch()
 
 	// Create compositeKey with appropriate prefix, txid, uuid and blockHeight

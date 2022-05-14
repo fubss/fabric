@@ -105,7 +105,7 @@ func TestBoltDBHelper(t *testing.T) {
 	require.Equal(t, "", string(val3))
 
 	keys := []string{}
-	c, tx := db.GetIterator(nil, nil)
+	c, tx, _, _, _ := db.GetIterator(nil, nil)
 	for k, _ := c.First(); k != nil; k, _ = c.Next() {
 		keys = append(keys, string(k))
 	}
