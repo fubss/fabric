@@ -431,11 +431,11 @@ func TestIsEmpty(t *testing.T) {
 
 		env.provider.Close()
 		empty, err := db1.IsEmpty()
-		require.EqualError(t, err, "internal leveldb error while obtaining db iterator: leveldb: closed")
+		require.EqualError(t, err, "internal boltdb error while obtaining db iterator: database not open")
 		require.False(t, empty)
 
 		empty, err = db2.IsEmpty()
-		require.EqualError(t, err, "internal leveldb error while obtaining db iterator: leveldb: closed")
+		require.EqualError(t, err, "internal boltdb error while obtaining db iterator: database not open")
 		require.False(t, empty)
 	})
 }

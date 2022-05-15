@@ -229,8 +229,11 @@ func (h *DBHandle) IsEmpty() (bool, error) {
 	/*if err := itr.Error(); err != nil {
 		return false, errors.WithMessagef(itr.Error(), "internal leveldb error while obtaining next entry from iterator")
 	}*/
-
-	return !itr.Next(), nil
+	itr.Next()
+	if itr.key == nil && itr.value == nil {
+		return !itr.Next(), nil //Next() will return false
+	}
+	return false, nil
 }
 
 // NewUpdateBatch returns a new UpdateBatch that can be used to update the db
