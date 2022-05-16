@@ -120,7 +120,8 @@ func TestIterator(t *testing.T) {
 				require.NoError(t, err)
 				defer itr.Release()
 				require.True(t, itr.Seek(testCase.seekToKey))
-				require.Equal(t, testCase.itrAtKeyAfterSeek, itr.Key())
+				k := itr.Key()
+				require.Equal(t, testCase.itrAtKeyAfterSeek, k)
 				checkItrResults(t, itr, testCase.expectedKeys, testCase.expectedValues)
 			},
 		)
@@ -137,8 +138,9 @@ func TestIterator(t *testing.T) {
 		require.True(t, itr.First())
 		require.True(t, itr.Seek([]byte(createTestKey(10))))
 		require.Equal(t, []byte(createTestKey(10)), itr.Key())
-		//require.True(t, itr.Prev())
-		checkItrResults(t, itr, createTestKeys(10, 19), createTestValues("db1", 10, 19))
+		//require.True(t, itr.Prev()) // There is no function Prev in Badger. So I use Seek to return to previous key
+		require.True(t, itr.Seek([]byte(createTestKey(9))))
+		checkItrResults(t, itr, createTestKeys(10, 19), createTestValues("db1", 10, 19)) //
 
 		require.True(t, itr.First())
 		require.False(t, itr.Seek([]byte(createTestKey(20))))
@@ -146,18 +148,18 @@ func TestIterator(t *testing.T) {
 		checkItrResults(t, itr, createTestKeys(1, 19), createTestValues("db1", 1, 19))
 
 		require.True(t, itr.First())
-		//require.False(t, itr.Prev())
-		checkItrResults(t, itr, createTestKeys(0, 19), createTestValues("db1", 0, 19))
+		//require.False(t, itr.Prev()) // There is no function Prev in Badger.
+		checkItrResults(t, itr, createTestKeys(1, 19), createTestValues("db1", 1, 19)) // Changed because Prev is not used
 
 		require.True(t, itr.First())
-		//require.True(t, itr.Last())
+		//require.True(t, itr.Last()) // There is no function Last in Badger.
 		checkItrResults(t, itr, nil, nil)
 	})
 
 	t.Run("test-error-path", func(t *testing.T) {
 		env.provider.Close()
 		itr, err := db1.GetIterator(nil, nil)
-		require.EqualError(t, err, "internal leveldb error while obtaining db iterator: leveldb: closed")
+		require.EqualError(t, err, "internal badgerdb error while obtaining db iterator: badgerdb: closed")
 		require.Nil(t, itr)
 	})
 }

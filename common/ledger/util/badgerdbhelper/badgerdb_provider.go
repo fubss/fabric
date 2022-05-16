@@ -8,6 +8,7 @@ package badgerdbhelper
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"sync"
 
@@ -256,6 +257,11 @@ func (h *DBHandle) GetIterator(startKey []byte, endKey []byte) (*Iterator, error
 		eKey[len(eKey)-1] = lastKeyIndicator
 	}
 	logger.Debugf("Getting iterator for range [%#v] - [%#v]", sKey, eKey)
+	if h.db.dbState == closed {
+		err := errors.New("internal badgerdb error while obtaining db iterator: badgerdb: closed")
+		logger.Debugf("itr.Err()=[%+v]. Impossible to create an iterator", err)
+		return nil, err
+	}
 	itr := h.db.GetIterator(sKey, eKey)
 	/*if err := itr.Error(); err != nil {
 		itr.Release()
@@ -301,19 +307,20 @@ type Iterator struct {
 
 // Key wraps actual leveldb iterator method
 func (itr *Iterator) Key() []byte {
-	return retrieveAppKey(itr.iterator.Item().Key())
+	key := itr.iterator.Item().Key()
+	return retrieveAppKey(key)
 }
 
 // Next() wraps Badger's functions to make function similar Leveldb Next
 func (itr *Iterator) Next() bool {
-	if !itr.iterator.Valid() {
-		return false
-	}
-
 	// Check does iterator need start from startKey
 	if itr.justOpened {
 		itr.iterator.Seek(itr.startKey)
 		itr.justOpened = false
+		return itr.iterator.ValidForPrefix([]byte(itr.dbName))
+	}
+	if !itr.iterator.ValidForPrefix([]byte(itr.dbName)) || bytes.Equal(itr.endKey, itr.iterator.Item().Key()) {
+		return false
 	}
 	itr.iterator.Next()
 	return true
@@ -331,7 +338,9 @@ func (itr *Iterator) First() bool {
 }
 
 func (itr *Iterator) Valid() bool {
-	return itr.iterator.Valid()
+	return itr.iterator.ValidForPrefix([]byte(itr.dbName)) &&
+		!bytes.Equal(itr.endKey, itr.iterator.Item().Key()) // Check iteration bounds when endKey != nil
+	//&& bytes.Equal(itr.endKey, []byte{lastKeyIndicator}) // Check iteration bounds when endKey == nil
 }
 
 func (itr *Iterator) Value() []byte {
@@ -347,9 +356,17 @@ func (itr *Iterator) Value() []byte {
 // whose key is greater than or equal to the given key.
 // It returns whether such pair exist.
 func (itr *Iterator) Seek(key []byte) bool {
+	itr.justOpened = false
 	levelKey := constructLevelKey(itr.dbName, key)
+	if bytes.Compare(levelKey, itr.startKey) == -1 {
+		itr.iterator.Seek(itr.startKey)
+		return itr.iterator.ValidForPrefix([]byte(itr.dbName))
+	} else if bytes.Compare(levelKey, itr.endKey) == 1 {
+		itr.iterator.Seek(itr.endKey)
+		return itr.iterator.ValidForPrefix([]byte(itr.dbName))
+	}
 	itr.iterator.Seek(levelKey)
-	return itr.iterator.Valid()
+	return itr.iterator.ValidForPrefix([]byte(itr.dbName))
 }
 
 func constructLevelKey(dbName string, key []byte) []byte {
