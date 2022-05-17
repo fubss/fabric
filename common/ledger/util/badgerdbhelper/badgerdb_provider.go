@@ -24,7 +24,7 @@ const (
 	internalDBName = "_"
 	// maxBatchSize limits the memory usage (1MB) for a batch. It is measured by the total number of bytes
 	// of all the keys in a batch.
-	maxBatchSize = 1000000
+	//maxBatchSize = 1000000
 )
 
 var (
@@ -187,23 +187,26 @@ func (h *DBHandle) deleteAll() error {
 	// each batch is limited by memory usage instead of number of keys. Once the batch memory usage reaches maxBatchSize,
 	// the batch will be committed.
 	numKeys := 0
-	batchSize := 0
-	batch := &badger.WriteBatch{}
-	for dbIter.Valid() {
+	var batchSize int64
+	batchSize = 0
+	batch := h.db.db.NewWriteBatch()
+	for dbIter.Seek([]byte(h.dbName)); dbIter.ValidForPrefix([]byte(h.dbName)); dbIter.Next() {
 		/*if err := dbIter.Error(); err != nil {
 			return errors.Wrap(err, "internal leveldb error while retrieving data from db iterator")
 		}*/
-		key := dbIter.Item().Key()
+		key := dbIter.Item().KeyCopy(nil)
 		numKeys++
-		batchSize = batchSize + len(key)
+		batchSize = batchSize + int64(len(key))
 		batch.Delete(key)
-		if batchSize >= maxBatchSize {
+		if batchSize >= h.db.db.MaxBatchSize() || numKeys == int(h.db.db.MaxBatchCount()) {
 			if err := h.db.WriteBatch(batch, true); err != nil {
 				return err
 			}
 			logger.Infof("Have removed %d entries for channel %s in badgerdb %s", numKeys, h.dbName, h.db.conf.DBPath)
 			batchSize = 0
-			batch.Cancel()
+			numKeys = 0
+			//batch.Cancel()
+			batch = h.db.db.NewWriteBatch()
 		}
 	}
 	if err = batch.Error(); err == nil {
@@ -231,7 +234,7 @@ func (h *DBHandle) IsEmpty() (bool, error) {
 func (h *DBHandle) NewUpdateBatch() *UpdateBatch {
 	return &UpdateBatch{
 		dbName:     h.dbName,
-		WriteBatch: &badger.WriteBatch{},
+		WriteBatch: h.db.db.NewWriteBatch(),
 	}
 }
 
