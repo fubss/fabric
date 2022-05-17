@@ -24,11 +24,11 @@ const (
 
 // DB - a wrapper on an actual store
 type DB struct {
-	conf    *Conf
-	db      *bolt.DB
-	dbState dbState
-	mutex   sync.RWMutex
-
+	conf     *Conf
+	db       *bolt.DB
+	dbState  dbState
+	mutex    sync.RWMutex
+	activeTx []*bolt.Tx //for active boltdb transactions
 	//readOpts        *opt.ReadOptions
 	//writeOptsNoSync *opt.WriteOptions
 	//writeOptsSync   *opt.WriteOptions
@@ -214,7 +214,7 @@ func (dbInst *DB) GetIterator(startKey []byte, endKey []byte) (*bolt.Cursor, *bo
 	c := tx.Bucket([]byte("fabric")).Cursor()
 	seekedKey, seekedValue := c.Seek(startKey)
 	//return dbInst.db.NewIterator(&goleveldbutil.Range{Start: startKey, Limit: endKey}, dbInst.readOpts)
-
+	//dbInst.activeTx = append()
 	return c, tx, seekedKey, seekedValue, nil
 }
 

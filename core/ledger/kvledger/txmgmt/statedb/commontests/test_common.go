@@ -962,6 +962,9 @@ func executeRangeQuery(t *testing.T, db statedb.VersionedDB, namespace, startKey
 
 	if pageSize == 0 {
 		itr, err = db.GetStateRangeScanIterator(namespace, startKey, endKey)
+		if itr != nil {
+			defer itr.Close()
+		}
 		if err != nil {
 			return "", err
 		}
@@ -1096,6 +1099,7 @@ func TestDataExportImport(
 			kv, err := fullScanItr.Next()
 			require.NoError(t, err)
 			if kv == nil {
+				fullScanItr.Close()
 				break
 			}
 			vv, err := destinationDB.GetState(kv.Namespace, kv.Key)

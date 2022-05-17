@@ -184,6 +184,7 @@ func (vdb *versionedDB) ExecuteQueryWithPagination(namespace, query, bookmark st
 // ApplyUpdates implements method in VersionedDB interface
 func (vdb *versionedDB) ApplyUpdates(batch *statedb.UpdateBatch, height *version.Height) error {
 	dbBatch := vdb.db.NewUpdateBatch()
+	defer dbBatch.Rollback()
 	namespaces := batch.GetUpdatedNamespaces()
 	for _, ns := range namespaces {
 		updates := batch.GetUpdates(ns)
@@ -252,13 +253,14 @@ func (vdb *versionedDB) importState(itr statedb.FullScanIterator, savepoint *ver
 		return vdb.db.Put(savePointKey, savepoint.ToBytes(), true)
 	}
 	dbBatch := vdb.db.NewUpdateBatch()
-	batchSize := 0
+	defer dbBatch.Rollback()
 	for {
 		versionedKV, err := itr.Next()
 		if err != nil {
 			return err
 		}
 		if versionedKV == nil {
+			itr.Close() //TODO: it might be excess
 			break
 		}
 		dbKey := kvdb.EncodeDataKey(versionedKV.Namespace, versionedKV.Key)
@@ -266,16 +268,16 @@ func (vdb *versionedDB) importState(itr statedb.FullScanIterator, savepoint *ver
 		if err != nil {
 			return err
 		}
-		batchSize += len(dbKey) + len(dbValue)
+		//batchSize += len(dbKey) + len(dbValue)
 		dbBatch.Put(dbKey, dbValue)
-		if batchSize >= maxDataImportBatchSize {
+		/*if batchSize >= maxDataImportBatchSize {
 			if err := vdb.db.WriteBatch(dbBatch, true); err != nil {
 				return err
 			}
 			batchSize = 0
 			logger.Debugf("Clearing batch...")
 			dbBatch.Tx.Rollback()
-		}
+		}*/
 	}
 	dbBatch.Put(savePointKey, savepoint.ToBytes())
 	return vdb.db.WriteBatch(dbBatch, true)
@@ -291,11 +293,10 @@ type kvScanner struct {
 	dbItr                *boltdbhelper.Iterator
 	requestedLimit       int32
 	totalRecordsReturned int32
-	firstKeyPassed       bool
 }
 
 func newKVScanner(namespace string, dbItr *boltdbhelper.Iterator, requestedLimit int32) *kvScanner {
-	return &kvScanner{namespace, dbItr, requestedLimit, 0, false}
+	return &kvScanner{namespace, dbItr, requestedLimit, 0}
 }
 
 func (scanner *kvScanner) Next() (*statedb.VersionedKV, error) {
@@ -308,13 +309,7 @@ func (scanner *kvScanner) Next() (*statedb.VersionedKV, error) {
 		logger.Debugf("IF-CASE (TODO: DELETE IF NEVER HAPPENED IN TESTS) boltdb iterator is not valid")
 		return nil, nil
 	}
-	//we have not to throw out the first iterator key.
-	if scanner.firstKeyPassed {
-		scanner.dbItr.Next()
-	} else {
-		logger.Debugf("First iterator key - Next() was omitted")
-		scanner.firstKeyPassed = true
-	}
+	scanner.dbItr.Next()
 	if !scanner.dbItr.Valid() {
 		logger.Debugf("if-case boltdb iterator is not valid after Next")
 		return nil, nil
@@ -365,10 +360,9 @@ func (scanner *kvScanner) GetBookmarkAndClose() string {
 type fullDBScanner struct {
 	db *boltdbhelper.DBHandle
 	//TODO add to kv-common-provider or interface
-	dbItr          *boltdbhelper.Iterator
-	toSkip         func(namespace string) bool
-	firstKeyPassed bool
-	closed         bool
+	dbItr  *boltdbhelper.Iterator
+	toSkip func(namespace string) bool
+	closed bool
 }
 
 func newFullDBScanner(db *boltdbhelper.DBHandle, skipNamespace func(namespace string) bool) (*fullDBScanner, error) {
@@ -377,10 +371,9 @@ func newFullDBScanner(db *boltdbhelper.DBHandle, skipNamespace func(namespace st
 		return nil, err
 	}
 	return &fullDBScanner{
-			db:             db,
-			dbItr:          dbItr,
-			toSkip:         skipNamespace,
-			firstKeyPassed: false,
+			db:     db,
+			dbItr:  dbItr,
+			toSkip: skipNamespace,
 		},
 		nil
 }
@@ -392,11 +385,7 @@ func (s *fullDBScanner) Next() (*statedb.VersionedKV, error) {
 		return nil, errors.Errorf("internal boltdb error while retrieving data from db iterator: iterator is not valid")
 	}
 	for {
-		if s.firstKeyPassed {
-			s.dbItr.Next()
-		} else {
-			s.firstKeyPassed = true
-		}
+		s.dbItr.Next()
 		if s.dbItr.Valid() {
 			logger.Debugf("itr is valid")
 		} else {
@@ -422,8 +411,7 @@ func (s *fullDBScanner) Next() (*statedb.VersionedKV, error) {
 			}, nil
 		default:
 			s.dbItr.Seek(kvdb.DataKeyStarterForNextNamespace(ns))
-			//s.dbItr.Prev() //why Prev()? because then function Next() will be called
-			s.firstKeyPassed = false //because docs says that itr.Prev() works slow
+			s.dbItr.Prev() // because 0-key of the ns1 is ommited if we call TestDataExportImport/test_case_2
 		}
 	}
 	return nil, nil

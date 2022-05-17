@@ -324,8 +324,8 @@ type Iterator struct {
 	value      []byte
 	lowerBound []byte // TODO test this
 	upperBound []byte // TODO test this
-	// In leveldb when Seek() is directly called or Prev() went over the boundaries,
-	// then Next() does omit 0 key and value, where iterator had been pointing after
+	// In leveldbhelper when Seek() is directly called or Prev() went over the boundaries,
+	// then boltdb.Next() does omit 0 key and value, where iterator had been pointing after
 	// Seek() call.
 	// Opposite when GetIterator() is called, Next() does not omit 0 key.
 	// So let's make false for every time when we call Iterator.Seek()

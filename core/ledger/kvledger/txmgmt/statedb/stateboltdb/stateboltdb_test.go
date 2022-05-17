@@ -38,7 +38,7 @@ func TestIterator(t *testing.T) {
 		require.NoError(t, err)
 		env.DBProvider.Close()
 		itr, err := db.GetStateRangeScanIterator("ns1", "", "")
-		require.EqualError(t, err, "error while obtaining db iterator: boltdb: closed")
+		require.EqualError(t, err, "internal boltdb error while obtaining db iterator: database not open")
 		require.Nil(t, itr)
 	})
 }
@@ -259,7 +259,7 @@ func TestDropErrorPath(t *testing.T) {
 	require.NoError(t, err)
 
 	env.DBProvider.Close()
-	require.EqualError(t, env.DBProvider.Drop("testdroperror"), "error while obtaining db iterator: boltdb: closed")
+	require.EqualError(t, env.DBProvider.Drop("testdroperror"), "internal boltdb error while obtaining db iterator: database not open")
 }
 
 type dummyFullScanIter struct {
