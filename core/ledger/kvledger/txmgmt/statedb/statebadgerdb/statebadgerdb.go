@@ -4,21 +4,20 @@ Copyright IBM Corp. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package stateleveldb
+package statebadgerdb
 
 import (
 	"bytes"
 
 	"github.com/hyperledger/fabric/common/flogging"
 	"github.com/hyperledger/fabric/common/ledger/dataformat"
-	"github.com/hyperledger/fabric/common/ledger/util/leveldbhelper"
+	"github.com/hyperledger/fabric/common/ledger/util/badgerdbhelper"
 	"github.com/hyperledger/fabric/core/ledger/internal/version"
 	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/statedb"
 	"github.com/pkg/errors"
-	"github.com/syndtr/goleveldb/leveldb/iterator"
 )
 
-var logger = flogging.MustGetLogger("stateleveldb")
+var logger = flogging.MustGetLogger("statebadgerdb")
 
 var (
 	dataKeyPrefix          = []byte{'d'}
@@ -31,14 +30,14 @@ var (
 
 // VersionedDBProvider implements interface VersionedDBProvider
 type VersionedDBProvider struct {
-	dbProvider *leveldbhelper.Provider
+	dbProvider *badgerdbhelper.Provider
 }
 
 // NewVersionedDBProvider instantiates VersionedDBProvider
 func NewVersionedDBProvider(dbPath string) (*VersionedDBProvider, error) {
 	logger.Debugf("constructing VersionedDBProvider dbPath=%s", dbPath)
-	dbProvider, err := leveldbhelper.NewProvider(
-		&leveldbhelper.Conf{
+	dbProvider, err := badgerdbhelper.NewProvider(
+		&badgerdbhelper.Conf{
 			DBPath:         dbPath,
 			ExpectedFormat: dataformat.CurrentFormat,
 		})
@@ -81,12 +80,12 @@ func (provider *VersionedDBProvider) Drop(dbName string) error {
 
 // VersionedDB implements VersionedDB interface
 type versionedDB struct {
-	db     *leveldbhelper.DBHandle
+	db     *badgerdbhelper.DBHandle
 	dbName string
 }
 
 // newVersionedDB constructs an instance of VersionedDB
-func newVersionedDB(db *leveldbhelper.DBHandle, dbName string) *versionedDB {
+func newVersionedDB(db *badgerdbhelper.DBHandle, dbName string) *versionedDB {
 	return &versionedDB{db, dbName}
 }
 
@@ -173,12 +172,12 @@ func (vdb *versionedDB) GetStateRangeScanIteratorWithPagination(namespace string
 
 // ExecuteQuery implements method in VersionedDB interface
 func (vdb *versionedDB) ExecuteQuery(namespace, query string) (statedb.ResultsIterator, error) {
-	return nil, errors.New("ExecuteQuery not supported for leveldb")
+	return nil, errors.New("ExecuteQuery not supported for badgerdb")
 }
 
 // ExecuteQueryWithPagination implements method in VersionedDB interface
 func (vdb *versionedDB) ExecuteQueryWithPagination(namespace, query, bookmark string, pageSize int32) (statedb.QueryResultsIterator, error) {
-	return nil, errors.New("ExecuteQueryWithMetadata not supported for leveldb")
+	return nil, errors.New("ExecuteQueryWithMetadata not supported for badgerdb")
 }
 
 // ApplyUpdates implements method in VersionedDB interface
@@ -267,7 +266,8 @@ func (vdb *versionedDB) importState(itr statedb.FullScanIterator, savepoint *ver
 				return err
 			}
 			batchSize = 0
-			dbBatch.Reset()
+			dbBatch.Cancel()
+			dbBatch = vdb.db.NewUpdateBatch()
 		}
 	}
 	dbBatch.Put(savePointKey, savepoint.ToBytes())
@@ -297,12 +297,12 @@ func dataKeyStarterForNextNamespace(ns string) []byte {
 
 type kvScanner struct {
 	namespace            string
-	dbItr                iterator.Iterator
+	dbItr                *badgerdbhelper.Iterator
 	requestedLimit       int32
 	totalRecordsReturned int32
 }
 
-func newKVScanner(namespace string, dbItr iterator.Iterator, requestedLimit int32) *kvScanner {
+func newKVScanner(namespace string, dbItr *badgerdbhelper.Iterator, requestedLimit int32) *kvScanner {
 	return &kvScanner{namespace, dbItr, requestedLimit, 0}
 }
 
@@ -350,12 +350,12 @@ func (scanner *kvScanner) GetBookmarkAndClose() string {
 }
 
 type fullDBScanner struct {
-	db     *leveldbhelper.DBHandle
-	dbItr  iterator.Iterator
+	db     *badgerdbhelper.DBHandle
+	dbItr  *badgerdbhelper.Iterator
 	toSkip func(namespace string) bool
 }
 
-func newFullDBScanner(db *leveldbhelper.DBHandle, skipNamespace func(namespace string) bool) (*fullDBScanner, error) {
+func newFullDBScanner(db *badgerdbhelper.DBHandle, skipNamespace func(namespace string) bool) (*fullDBScanner, error) {
 	dbItr, err := db.GetIterator(dataKeyPrefix, dataKeyStopper)
 	if err != nil {
 		return nil, err
@@ -390,10 +390,10 @@ func (s *fullDBScanner) Next() (*statedb.VersionedKV, error) {
 			}, nil
 		default:
 			s.dbItr.Seek(dataKeyStarterForNextNamespace(ns))
-			s.dbItr.Prev()
+			s.dbItr.First()
 		}
 	}
-	return nil, errors.Wrap(s.dbItr.Error(), "internal leveldb error while retrieving data from db iterator")
+	return nil, errors.Wrap(nil, "internal badgerdb error while retrieving data from db iterator")
 }
 
 func (s *fullDBScanner) Close() {

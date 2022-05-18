@@ -198,7 +198,7 @@ type RangeIterator struct {
 
 // Key() wraps Badger's functions to make function similar Leveldb Key
 func (itr *RangeIterator) Key() []byte {
-	return itr.iterator.Item().Key()
+	return itr.iterator.Item().KeyCopy(nil)
 }
 
 // GetIterator returns an iterator over key-value store. The iterator should be released after the use.

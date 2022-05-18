@@ -310,7 +310,7 @@ type Iterator struct {
 
 // Key wraps actual leveldb iterator method
 func (itr *Iterator) Key() []byte {
-	key := itr.iterator.Item().Key()
+	key := itr.iterator.Item().KeyCopy(nil)
 	return retrieveAppKey(key)
 }
 
