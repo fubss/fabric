@@ -324,7 +324,7 @@ func (scanner *kvScanner) Next() (*statedb.VersionedKV, error) {
 		return nil, nil
 	}
 	if !scanner.dbItr.Valid() {
-		logger.Debugf("IF-CASE (TODO: DELETE IF NEVER HAPPENED IN TESTS) boltdb iterator is not valid")
+		logger.Debugf("IF-CASE boltdb iterator is not valid")
 		return nil, nil
 	}
 	scanner.dbItr.Next()
@@ -359,8 +359,10 @@ func (scanner *kvScanner) Next() (*statedb.VersionedKV, error) {
 
 func (scanner *kvScanner) Close() {
 	logger.Debugf("Closing boltdb iterator...")
-	scanner.dbItr.Release()
-	scanner.dbItr = nil
+	if scanner.dbItr != nil {
+		scanner.dbItr.Release()
+		scanner.dbItr = nil
+	}
 }
 
 func (scanner *kvScanner) GetBookmarkAndClose() string {
