@@ -184,6 +184,12 @@ func (vdb *versionedDB) ExecuteQueryWithPagination(namespace, query, bookmark st
 // ApplyUpdates implements method in VersionedDB interface
 func (vdb *versionedDB) ApplyUpdates(batch *statedb.UpdateBatch, height *version.Height) error {
 	dbBatch := vdb.db.NewUpdateBatch()
+	if err := dbBatch.Error(); err != nil {
+		if dbBatch != nil {
+			dbBatch.Rollback()
+		}
+		return err
+	}
 	defer dbBatch.Rollback()
 	namespaces := batch.GetUpdatedNamespaces()
 	for _, ns := range namespaces {
@@ -195,6 +201,9 @@ func (vdb *versionedDB) ApplyUpdates(batch *statedb.UpdateBatch, height *version
 			if vv.Value == nil {
 				logger.Debugf("deleting datakey [%s]", dataKey)
 				dbBatch.Delete(dataKey)
+				if err := dbBatch.Error(); err != nil {
+					return err
+				}
 			} else {
 				encodedVal, err := kvdb.EncodeValue(vv)
 				if err != nil {
@@ -202,6 +211,9 @@ func (vdb *versionedDB) ApplyUpdates(batch *statedb.UpdateBatch, height *version
 				}
 				logger.Debugf("dbBatch.Put(dataKey=[%#v (%s)], encodedVal=[%#v (%s)])", dataKey, dataKey, encodedVal, encodedVal)
 				dbBatch.Put(dataKey, encodedVal)
+				if err := dbBatch.Error(); err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -212,6 +224,9 @@ func (vdb *versionedDB) ApplyUpdates(batch *statedb.UpdateBatch, height *version
 	if height != nil {
 		logger.Debugf("dbBatch.Put(savePointKey=[%#v (%s)], height.ToBytes()=[%#v (%s)])", savePointKey, savePointKey, height.ToBytes(), height.ToBytes())
 		dbBatch.Put(savePointKey, height.ToBytes())
+		if err := dbBatch.Error(); err != nil {
+			return err
+		}
 	}
 	// Setting snyc to true as a precaution, false may be an ok optimization after further testing.
 	logger.Debugf("WritingBatch...")
@@ -253,6 +268,9 @@ func (vdb *versionedDB) importState(itr statedb.FullScanIterator, savepoint *ver
 		return vdb.db.Put(savePointKey, savepoint.ToBytes(), true)
 	}
 	dbBatch := vdb.db.NewUpdateBatch()
+	if err := dbBatch.Error(); err != nil {
+		return err
+	}
 	defer dbBatch.Rollback()
 	for {
 		versionedKV, err := itr.Next()

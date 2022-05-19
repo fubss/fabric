@@ -222,12 +222,13 @@ func (dbInst *DB) GetIterator(startKey []byte, endKey []byte) (*bolt.Cursor, *bo
 // Because batch in boltdb is only useful when
 // several goroutines calling it.
 func (dbInst *DB) WriteBatch(tx *bolt.Tx, sync bool) error {
+	defer tx.Rollback() //it was put to the beginning to not to forgot close the tx if smth happens
 	dbInst.mutex.RLock()
 	defer dbInst.mutex.RUnlock()
 	if !sync {
 		dbInst.setSyncOffOnce()
 	}
-
+	logger.Debugf("writing batch...")
 	if err := tx.Commit(); err != nil {
 		return errors.Wrap(err, "error writing batch to boltdb")
 	}

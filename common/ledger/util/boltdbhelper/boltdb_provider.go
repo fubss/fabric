@@ -185,6 +185,9 @@ func (h *DBHandle) createBatchTx() (*bolt.Tx, error) {
 func (h *DBHandle) deleteAll() error {
 	iter, err := h.GetIterator(nil, nil)
 	if err != nil {
+		if iter != nil {
+			iter.Rollback()
+		}
 		return err
 	}
 	defer iter.Release()
@@ -193,19 +196,33 @@ func (h *DBHandle) deleteAll() error {
 	// each batch is limited by memory usage instead of number of keys. Once the batch memory usage reaches maxBatchSize,
 	// the batch will be committed.
 	numKeys := 0
-	batchSize := 0
 	batchTx, err := h.createBatchTx()
 	defer batchTx.Rollback()
 	if err != nil {
 		return err
 	}
-	iter.Seek(iter.lowerBound)
-	iter.seekJustHappened = true
+	//iter.Seek(iter.lowerBound) // it had created a key twice
+	//iter.seekJustHappened = true
+	seekedKey, _ := iter.Cursor.Seek(iter.lowerBound)
+	iter.seekJustHappened = false // to omit 0-key in the next loop
+	tmpKey := make([]byte, len(seekedKey))
+	copy(tmpKey, seekedKey)
+	b := batchTx.Bucket([]byte("fabric"))
+	err = b.Delete(tmpKey)
+	if err != nil {
+		return err
+	}
 	for iter.Next() {
 		numKeys++
-		batchSize = batchSize + len(iter.key)
-		batchTx.Bucket([]byte("fabric")).Delete(iter.key)
+		tmpKey = make([]byte, len(iter.key))
+		copy(tmpKey, iter.key)
+		b = batchTx.Bucket([]byte("fabric"))
+		err = b.Delete(tmpKey)
+		if err != nil {
+			return err
+		}
 	}
+	iter.Release() // the only tx might be open in one go routine while writing, otherwise deadlock occurs
 	if err := h.db.WriteBatch(batchTx, true); err != nil {
 		return err
 	}
@@ -221,6 +238,9 @@ func (h *DBHandle) deleteAll() error {
 func (h *DBHandle) IsEmpty() (bool, error) {
 	itr, err := h.GetIterator(nil, nil)
 	if err != nil {
+		if itr != nil {
+			itr.Release()
+		}
 		return false, err
 	}
 	defer itr.Release()
@@ -229,9 +249,15 @@ func (h *DBHandle) IsEmpty() (bool, error) {
 	/*if err := itr.Error(); err != nil {
 		return false, errors.WithMessagef(itr.Error(), "internal leveldb error while obtaining next entry from iterator")
 	}*/
+
 	itr.Next()
 	if itr.key == nil && itr.value == nil {
 		return !itr.Next(), nil //Next() will return false
+	} else if bytes.Compare(itr.key, itr.upperBound) > 0 {
+		// Additional case special if only this DBHandle is empty,
+		// but others not. It is because GetIterator in BoltDB will find
+		// next key after upperBoundary
+		return true, nil
 	}
 	return false, nil
 }
@@ -239,12 +265,10 @@ func (h *DBHandle) IsEmpty() (bool, error) {
 // NewUpdateBatch returns a new UpdateBatch that can be used to update the db
 func (h *DBHandle) NewUpdateBatch() *UpdateBatch {
 	batchTx, err := h.createBatchTx()
-	if err != nil {
-		logger.Errorf("Error creating batch (boltdb tx): %+v", err)
-	}
 	return &UpdateBatch{
 		dbName: h.dbName,
 		Tx:     batchTx,
+		err:    errors.Wrapf(err, "Error creating batch (boltdb tx)"),
 	}
 }
 
@@ -300,6 +324,7 @@ func (h *DBHandle) Close() {
 type UpdateBatch struct {
 	*bolt.Tx
 	dbName string
+	err    error
 }
 
 // Put adds a KV
@@ -307,12 +332,26 @@ func (b *UpdateBatch) Put(key []byte, value []byte) {
 	if value == nil {
 		panic("Nil value not allowed")
 	}
-	b.Tx.Bucket([]byte("fabric")).Put(constructLevelKey(b.dbName, key), value)
+	bucket := b.Tx.Bucket([]byte("fabric")) // get acces to the global bucket
+	if bucket == nil {
+		b.err = fmt.Errorf("global bucket does not exist in db")
+		return
+	}
+	b.err = bucket.Put(constructLevelKey(b.dbName, key), value)
 }
 
 // Delete deletes a Key and associated value
 func (b *UpdateBatch) Delete(key []byte) {
-	b.Tx.Bucket([]byte("fabric")).Delete(constructLevelKey(b.dbName, key))
+	bucket := b.Tx.Bucket([]byte("fabric")) // get acces to the global bucket
+	if bucket == nil {
+		b.err = fmt.Errorf("global bucket does not exist in db")
+		return
+	}
+	b.err = bucket.Delete(constructLevelKey(b.dbName, key))
+}
+
+func (b *UpdateBatch) Error() error {
+	return b.err
 }
 
 // Iterator extends actual leveldb iterator

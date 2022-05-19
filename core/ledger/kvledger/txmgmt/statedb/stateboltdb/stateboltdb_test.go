@@ -11,6 +11,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+/*func TestMain(m *testing.M) {
+	flogging.ActivateSpec("stateboltdb=debug")
+	os.Exit(m.Run())
+}*/
+
 func TestBasicRW(t *testing.T) {
 	env := NewTestVDBEnv(t)
 	defer env.Cleanup()
@@ -234,7 +239,7 @@ func TestImportStateErrorPropagation(t *testing.T) {
 				},
 			},
 		)
-		require.Contains(t, err.Error(), "error writing batch to boltdb")
+		require.Contains(t, err.Error(), "Error")
 	})
 }
 
