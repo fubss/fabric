@@ -19,6 +19,7 @@ import (
 	"github.com/hyperledger/fabric/core/ledger/internal/version"
 	"github.com/hyperledger/fabric/core/ledger/kvledger/bookkeeping"
 	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/statedb"
+	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/statedb/stateboltdb"
 	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/statedb/statecouchdb"
 	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/statedb/stateleveldb"
 	"github.com/hyperledger/fabric/core/ledger/util"
@@ -66,7 +67,13 @@ func NewDBProvider(
 		if vdbProvider, err = statecouchdb.NewVersionedDBProvider(stateDBConf.CouchDB, metricsProvider, sysNamespaces); err != nil {
 			return nil, err
 		}
+	} else if stateDBConf != nil && stateDBConf.StateDatabase == ledger.BboltDB {
+		logger.Debugf("creating bbolt statedb provider...") //TODO: delete this
+		if vdbProvider, err = stateboltdb.NewVersionedDBProvider(stateDBConf.LevelDBPath); err != nil {
+			return nil, err
+		}
 	} else {
+		logger.Debugf("creating leveldb statedb provider...") //TODO: delete this
 		if vdbProvider, err = stateleveldb.NewVersionedDBProvider(stateDBConf.LevelDBPath); err != nil {
 			return nil, err
 		}

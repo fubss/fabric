@@ -410,7 +410,9 @@ func (itr *Iterator) Seek(key []byte) bool {
 }
 
 func (itr *Iterator) Release() {
-	itr.Tx.Rollback()
+	if itr.Tx != nil {
+		itr.Tx.Rollback()
+	}
 	itr.key = nil
 	itr.value = nil
 	itr.lowerBound = nil
