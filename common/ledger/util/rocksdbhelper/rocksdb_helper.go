@@ -27,19 +27,25 @@ type DB struct {
 	dbState dbState
 	mutex   sync.RWMutex
 
-	readOpts *rocksdb.ReadOptions
-	/*writeOptsNoSync *rocksdb.WriteOptions
-	writeOptsSync   *rocksdb.WriteOptions*/
+	readOpts        *rocksdb.ReadOptions
+	writeOptsNoSync *rocksdb.WriteOptions
+	writeOptsSync   *rocksdb.WriteOptions
 }
 
 // CreateDB constructs a `DB`
 func CreateDB(conf *Conf) *DB {
 	logger.Debugf("RocksDB constructing...")
 	logger.Debugf("RocksDB constructing successfully finished")
+	wOptsNoSync := rocksdb.NewDefaultWriteOptions()
+	wOptsNoSync.SetSync(false)
+	wOptsSync := rocksdb.NewDefaultWriteOptions()
+	wOptsSync.SetSync(true)
 	return &DB{
-		conf:     conf,
-		dbState:  closed,
-		readOpts: rocksdb.NewDefaultReadOptions(),
+		conf:            conf,
+		dbState:         closed,
+		readOpts:        rocksdb.NewDefaultReadOptions(),
+		writeOptsNoSync: wOptsNoSync,
+		writeOptsSync:   wOptsSync,
 	}
 }
 
@@ -134,9 +140,11 @@ func (dbInst *DB) Get(key []byte) ([]byte, error) {
 func (dbInst *DB) Put(key []byte, value []byte, sync bool) error {
 	dbInst.mutex.RLock()
 	defer dbInst.mutex.RUnlock()
-	wo := rocksdb.NewDefaultWriteOptions()
+	var wo *rocksdb.WriteOptions
 	if sync {
-		wo.SetSync(true)
+		wo = dbInst.writeOptsSync
+	} else {
+		wo = dbInst.writeOptsNoSync
 	}
 	err := dbInst.db.Put(wo, key, value)
 	if err != nil {
@@ -150,9 +158,11 @@ func (dbInst *DB) Put(key []byte, value []byte, sync bool) error {
 func (dbInst *DB) Delete(key []byte, sync bool) error {
 	dbInst.mutex.RLock()
 	defer dbInst.mutex.RUnlock()
-	wo := rocksdb.NewDefaultWriteOptions()
+	var wo *rocksdb.WriteOptions
 	if sync {
-		wo.SetSync(true)
+		wo = dbInst.writeOptsSync
+	} else {
+		wo = dbInst.writeOptsNoSync
 	}
 	err := dbInst.db.Delete(wo, key)
 	if err != nil {
@@ -207,9 +217,11 @@ func (dbInst *DB) WriteBatch(batch *rocksdb.WriteBatch, sync bool) error {
 	logger.Debugf("WritingBatch.Count()=[%d]", batch.Count()) //TODO: delete this
 	dbInst.mutex.RLock()
 	defer dbInst.mutex.RUnlock()
-	wo := rocksdb.NewDefaultWriteOptions()
+	var wo *rocksdb.WriteOptions
 	if sync {
-		wo.SetSync(true)
+		wo = dbInst.writeOptsSync
+	} else {
+		wo = dbInst.writeOptsNoSync
 	}
 	if err := dbInst.db.Write(wo, batch); err != nil {
 		return errors.Wrap(err, "error writing batch to rocksdb")
