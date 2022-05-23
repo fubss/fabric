@@ -227,7 +227,7 @@ func TestCreateDBInNonEmptyDir(t *testing.T) {
 
 func BenchmarkRocksDBHelper(b *testing.B) {
 	b.Run("get-rocksdb-little-data", BenchmarkGetRocksDBWithLittleData)
-	b.Run("get-rocksdb-big-data", BenchmarkGetRocksDBWithBigData)
+	b.Run("get-rocksdb-big-data-3000-keys", BenchmarkGetRocksDBWithBigData)
 	b.Run("put-rocksdb", BenchmarkPutRocksDB)
 	b.Run("put-rocksdb-type-2", BenchmarkPutRocksDB2)
 }

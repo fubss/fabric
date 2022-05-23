@@ -218,7 +218,7 @@ func TestCreateDBInNonEmptyDir(t *testing.T) {
 
 func BenchmarkLevelDBHelper(b *testing.B) {
 	b.Run("get-leveldb-little-data", BenchmarkGetLevelDBWithLittleData)
-	b.Run("get-leveldb-big-data", BenchmarkGetLevelDBWithBigData)
+	b.Run("get-leveldb-big-data-3000-keys", BenchmarkGetLevelDBWithBigData)
 	b.Run("put-leveldb", BenchmarkPutLevelDB)
 	b.Run("put-leveldb-type-2", BenchmarkPutLevelDB2)
 }
