@@ -8,9 +8,12 @@ package badgerdbhelper
 
 import (
 	"fmt"
+	"io/ioutil"
+	"math/rand"
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
@@ -210,4 +213,95 @@ func TestCreateDBInNonEmptyDir(t *testing.T) {
 		}
 	}()
 	db.Open()
+}
+
+func BenchmarkBadgerDBHelper(b *testing.B) {
+	b.Run("get-badgerdb-little-data", BenchmarkGetBadgerDBWithLittleData)
+	//b.Run("get-badgerdb-big-data", BenchmarkGetBadgerDBWithBigData)
+	b.Run("put-badgerdb", BenchmarkPutBadgerDB)
+	b.Run("put-badgerdb-type-2", BenchmarkPutBadgerDB2)
+}
+
+func BenchmarkGetBadgerDBWithLittleData(b *testing.B) {
+	db := createAndOpenDB()
+	db.Put([]byte("key1"), []byte("value1"), true)
+	db.Put([]byte("key2"), []byte("value2"), true)
+	db.Put([]byte("key3"), []byte(""), true)
+	db.Put([]byte("key4"), []byte("value4"), true)
+	db.Put([]byte("key5"), []byte("null"), true)
+	createdKeysAmount := 5
+	randSource := rand.NewSource(time.Now().UnixNano())
+	r := rand.New(randSource)
+	keys := make([][]byte, 500)
+	for i := range keys {
+		keys[i] = []byte(fmt.Sprintf("key%d", (r.Int() % createdKeysAmount)))
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = db.Get(keys[i%500])
+	}
+
+}
+
+func BenchmarkGetBadgerDBWithBigData(b *testing.B) {
+	db := createAndOpenDB()
+	keysTotalAmount := 1000
+	keysToGetApproxAmount := 500
+	for i := 0; i < keysTotalAmount; i++ {
+		_ = db.Put([]byte(createTestKey(i)), []byte(createTestValue("testdb", i)), true)
+
+	}
+	randSource := rand.NewSource(time.Now().UnixNano())
+	r := rand.New(randSource)
+	keysToGet := make([][]byte, keysToGetApproxAmount)
+	for i := range keysToGet {
+		keysToGet[i] = []byte(createTestKey(r.Int() % keysTotalAmount))
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = db.Get(keysToGet[i%keysToGetApproxAmount])
+	}
+
+}
+
+func BenchmarkPutBadgerDB(b *testing.B) {
+	db := createAndOpenDB()
+	keysAmount := 100000
+	keys := make([][]byte, 0, keysAmount)
+	values := make([][]byte, 0, keysAmount)
+	for i := 0; i < keysAmount; i++ {
+		key := []byte(createTestKey(i))
+		value := []byte(createTestValue("testdb", i))
+		keys = append(keys, key)
+		values = append(values, value)
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = db.Put(keys[i%keysAmount], values[i%keysAmount], true)
+	}
+}
+
+func BenchmarkPutBadgerDB2(b *testing.B) {
+	db := createAndOpenDB()
+	var key []byte
+	var value []byte
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		b.StopTimer()
+		key = []byte(createTestKey(i))
+		value = []byte(createTestValue("testdb", i))
+		b.StartTimer()
+		_ = db.Put(key, value, true)
+	}
+}
+
+func createAndOpenDB() *DB {
+	dbPath, _ := ioutil.TempDir("", "badgerdb")
+	defer os.RemoveAll(dbPath)
+	db := CreateDB(&Conf{
+		DBPath:         dbPath,
+		ExpectedFormat: "2.0",
+	})
+	db.Open()
+	return db
 }

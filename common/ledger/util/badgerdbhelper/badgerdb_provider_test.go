@@ -11,14 +11,14 @@ import (
 	"os"
 	"testing"
 
+	"github.com/hyperledger/fabric/common/flogging"
 	"github.com/hyperledger/fabric/common/ledger/dataformat"
 
-	"github.com/hyperledger/fabric/common/flogging"
 	"github.com/stretchr/testify/require"
 )
 
 func TestMain(m *testing.M) {
-	flogging.ActivateSpec("leveldbhelper=debug")
+	flogging.ActivateSpec("badgerdbhelper=debug")
 	os.Exit(m.Run())
 }
 

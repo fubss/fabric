@@ -270,7 +270,7 @@ func (h *DBHandle) GetIterator(startKey []byte, endKey []byte) (*Iterator, error
 		itr.Release()
 		return nil, errors.Wrapf(err, "internal leveldb error while obtaining db iterator")
 	}*/
-	return &Iterator{h.dbName, itr, true}, nil
+	return &Iterator{h.dbName, itr, true, false}, nil
 }
 
 // Close closes the DBHandle after its db data have been deleted
@@ -306,6 +306,7 @@ type Iterator struct {
 	dbName string
 	RangeIterator
 	justOpened bool
+	outOfRange bool
 }
 
 // Key wraps actual leveldb iterator method
@@ -316,16 +317,25 @@ func (itr *Iterator) Key() []byte {
 
 // Next() wraps Badger's functions to make function similar Leveldb Next
 func (itr *Iterator) Next() bool {
+	if itr.outOfRange {
+		return false
+	}
 	// Check does iterator need start from startKey
 	if itr.justOpened {
 		itr.iterator.Seek(itr.startKey)
 		itr.justOpened = false
 		return itr.iterator.ValidForPrefix([]byte(itr.dbName))
 	}
-	if !itr.iterator.ValidForPrefix([]byte(itr.dbName)) || bytes.Equal(itr.endKey, itr.iterator.Item().Key()) {
+
+	itr.iterator.Next()
+	if !itr.iterator.ValidForPrefix([]byte(itr.dbName)) {
+		itr.outOfRange = true
 		return false
 	}
-	itr.iterator.Next()
+	if bytes.Equal(itr.endKey, itr.iterator.Item().Key()) {
+		itr.outOfRange = true
+		return false
+	}
 	return true
 }
 
@@ -336,13 +346,22 @@ func (itr *Iterator) Release() {
 
 // First wraps Badger's function to make function similar Leveldb
 func (itr *Iterator) First() bool {
+	itr.outOfRange = false
 	itr.iterator.Rewind()
 	return itr.iterator.Valid()
 }
 
 func (itr *Iterator) Valid() bool {
-	return itr.iterator.ValidForPrefix([]byte(itr.dbName)) &&
-		!bytes.Equal(itr.endKey, itr.iterator.Item().Key()) // Check iteration bounds when endKey != nil
+	if itr.outOfRange {
+		return false
+	}
+	if !itr.iterator.ValidForPrefix([]byte(itr.dbName)) ||
+		bytes.Equal(itr.endKey, itr.iterator.Item().Key()) {
+		itr.outOfRange = true
+		return false
+	}
+	return true
+	// Check iteration bounds when endKey != nil
 	//&& bytes.Equal(itr.endKey, []byte{lastKeyIndicator}) // Check iteration bounds when endKey == nil
 }
 
@@ -360,12 +379,14 @@ func (itr *Iterator) Value() []byte {
 // It returns whether such pair exist.
 func (itr *Iterator) Seek(key []byte) bool {
 	itr.justOpened = false
+	itr.outOfRange = false
 	levelKey := constructLevelKey(itr.dbName, key)
 	if bytes.Compare(levelKey, itr.startKey) == -1 {
 		itr.iterator.Seek(itr.startKey)
 		return itr.iterator.ValidForPrefix([]byte(itr.dbName))
 	} else if bytes.Compare(levelKey, itr.endKey) == 1 {
 		itr.iterator.Seek(itr.endKey)
+		itr.outOfRange = true
 		return itr.iterator.ValidForPrefix([]byte(itr.dbName))
 	}
 	itr.iterator.Seek(levelKey)

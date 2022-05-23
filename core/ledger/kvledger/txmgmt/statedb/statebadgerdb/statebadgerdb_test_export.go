@@ -14,19 +14,19 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestVDBEnv provides a level db backed versioned db for testing
+// TestVDBEnv provides a badger db backed versioned db for testing
 type TestVDBEnv struct {
 	t          testing.TB
 	DBProvider *VersionedDBProvider
 	dbPath     string
 }
 
-// NewTestVDBEnv instantiates and new level db backed TestVDB
+// NewTestVDBEnv instantiates and new badger db backed TestVDB
 func NewTestVDBEnv(t testing.TB) *TestVDBEnv {
 	t.Logf("Creating new TestVDBEnv")
-	dbPath, err := ioutil.TempDir("", "statelvldb")
+	dbPath, err := ioutil.TempDir("", "statebadgerdb")
 	if err != nil {
-		t.Fatalf("Failed to create leveldb directory: %s", err)
+		t.Fatalf("Failed to create badgerdb directory: %s", err)
 	}
 	dbProvider, err := NewVersionedDBProvider(dbPath)
 	require.NoError(t, err)

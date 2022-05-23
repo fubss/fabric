@@ -287,6 +287,9 @@ func encodeDataKey(ns, key string) []byte {
 
 func decodeDataKey(encodedDataKey []byte) (string, string) {
 	split := bytes.SplitN(encodedDataKey, nsKeySep, 2)
+	if len(split) <= 1 {
+		return "", ""
+	}
 	return string(split[0][1:]), string(split[1])
 }
 
@@ -372,6 +375,9 @@ func newFullDBScanner(db *badgerdbhelper.DBHandle, skipNamespace func(namespace 
 func (s *fullDBScanner) Next() (*statedb.VersionedKV, error) {
 	for s.dbItr.Next() {
 		ns, key := decodeDataKey(s.dbItr.Key())
+		if ns == "" && key == "" {
+			return nil, nil
+		}
 		compositeKey := &statedb.CompositeKey{
 			Namespace: ns,
 			Key:       key,
@@ -393,7 +399,7 @@ func (s *fullDBScanner) Next() (*statedb.VersionedKV, error) {
 			s.dbItr.First()
 		}
 	}
-	return nil, errors.Wrap(nil, "internal badgerdb error while retrieving data from db iterator")
+	return nil, errors.Errorf("internal badgerdb error while retrieving data from db iterator")
 }
 
 func (s *fullDBScanner) Close() {

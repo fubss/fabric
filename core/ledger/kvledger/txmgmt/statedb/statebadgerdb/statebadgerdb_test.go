@@ -43,7 +43,7 @@ func TestIterator(t *testing.T) {
 		require.NoError(t, err)
 		env.DBProvider.Close()
 		itr, err := db.GetStateRangeScanIterator("ns1", "", "")
-		require.EqualError(t, err, "internal leveldb error while obtaining db iterator: leveldb: closed")
+		require.EqualError(t, err, "internal badgerdb error while obtaining db iterator: badgerdb: closed")
 		require.Nil(t, itr)
 	})
 }
@@ -80,7 +80,7 @@ func TestQueryOnLevelDB(t *testing.T) {
 	// As queries are not supported in levelDB, call to ExecuteQuery()
 	// should return a error message
 	itr, err := db.ExecuteQuery("ns1", `{"selector":{"owner":"jerry"}}`)
-	require.Error(t, err, "ExecuteQuery not supported for leveldb")
+	require.Error(t, err, "ExecuteQuery not supported for badgerdb")
 	require.Nil(t, itr)
 }
 
@@ -107,7 +107,7 @@ func TestUtilityFunctions(t *testing.T) {
 	require.True(t, db.BytesKeySupported())
 
 	// ValidateKeyValue should return nil for a valid key and value
-	require.NoError(t, db.ValidateKeyValue("testKey", []byte("testValue")), "leveldb should accept all key-values")
+	require.NoError(t, db.ValidateKeyValue("testKey", []byte("testValue")), "badgerdb should accept all key-values")
 }
 
 func TestValueAndMetadataWrites(t *testing.T) {
@@ -177,7 +177,7 @@ func TestFullScanIteratorErrorPropagation(t *testing.T) {
 			return false
 		},
 	)
-	require.Contains(t, err.Error(), "internal leveldb error while obtaining db iterator:")
+	require.Contains(t, err.Error(), "internal badgerdb error while obtaining db iterator:")
 
 	// error from function Next
 	reInitEnv()
@@ -189,7 +189,7 @@ func TestFullScanIteratorErrorPropagation(t *testing.T) {
 	require.NoError(t, err)
 	itr.Close()
 	_, err = itr.Next()
-	require.Contains(t, err.Error(), "internal leveldb error while retrieving data from db iterator:")
+	require.Contains(t, err.Error(), "internal badgerdb error while retrieving data from db iterator")
 }
 
 func TestImportStateErrorPropagation(t *testing.T) {
@@ -239,7 +239,7 @@ func TestImportStateErrorPropagation(t *testing.T) {
 				},
 			},
 		)
-		require.Contains(t, err.Error(), "error writing batch to leveldb")
+		require.Contains(t, err.Error(), "error writing batch to badgerdb")
 	})
 }
 
@@ -264,7 +264,7 @@ func TestDropErrorPath(t *testing.T) {
 	require.NoError(t, err)
 
 	env.DBProvider.Close()
-	require.EqualError(t, env.DBProvider.Drop("testdroperror"), "internal leveldb error while obtaining db iterator: leveldb: closed")
+	require.EqualError(t, env.DBProvider.Drop("testdroperror"), "internal badgerdb error while obtaining db iterator: badgerdb: closed")
 }
 
 type dummyFullScanIter struct {

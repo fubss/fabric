@@ -193,6 +193,10 @@ type RangeIterator struct {
 		itr.justOpened = false
 	}
 	itr.iterator.Next()
+	if bytes.Equal(itr.endKey, itr.iterator.Item().Key()) {
+		itr.iterator.Close()
+		return false
+	}
 	return itr.iterator.Valid()
 }*/
 
