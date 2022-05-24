@@ -13,6 +13,7 @@ import (
 	"github.com/hyperledger/fabric/core/ledger/internal/version"
 	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/statedb"
 	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/statedb/commontests"
+	kvdb "github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/statedb/stateleveldb"
 	"github.com/stretchr/testify/require"
 )
 
@@ -54,9 +55,9 @@ func TestDataKeyEncoding(t *testing.T) {
 }
 
 func testDataKeyEncoding(t *testing.T, dbName string, ns string, key string) {
-	dataKey := encodeDataKey(ns, key)
+	dataKey := kvdb.EncodeDataKey(ns, key)
 	t.Logf("dataKey=%#v", dataKey)
-	ns1, key1 := decodeDataKey(dataKey)
+	ns1, key1 := kvdb.DecodeDataKey(dataKey)
 	require.Equal(t, ns, ns1)
 	require.Equal(t, key, key1)
 }

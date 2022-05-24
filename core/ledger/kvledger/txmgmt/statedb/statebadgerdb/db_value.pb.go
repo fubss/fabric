@@ -11,7 +11,7 @@
 
 package statebadgerdb
 
-import (
+/*import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -168,4 +168,4 @@ func file_db_value_proto_init() {
 	file_db_value_proto_rawDesc = nil
 	file_db_value_proto_goTypes = nil
 	file_db_value_proto_depIdxs = nil
-}
+}*/

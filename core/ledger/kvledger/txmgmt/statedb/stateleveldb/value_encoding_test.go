@@ -1,6 +1,5 @@
 /*
 Copyright IBM Corp. All Rights Reserved.
-
 SPDX-License-Identifier: Apache-2.0
 */
 
@@ -45,9 +44,9 @@ func TestEncodeDecodeVersionedValues(t *testing.T) {
 }
 
 func testEncodeDecodeVersionedValues(t *testing.T, v *statedb.VersionedValue) {
-	encodedVal, err := encodeValue(v)
+	encodedVal, err := EncodeValue(v)
 	require.NoError(t, err)
-	decodedVal, err := decodeValue(encodedVal)
+	decodedVal, err := DecodeValue(encodedVal)
 	require.NoError(t, err)
 	require.Equal(t, v, decodedVal)
 }

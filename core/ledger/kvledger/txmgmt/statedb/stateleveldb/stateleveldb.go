@@ -1,6 +1,5 @@
 /*
 Copyright IBM Corp. All Rights Reserved.
-
 SPDX-License-Identifier: Apache-2.0
 */
 
@@ -50,6 +49,7 @@ func NewVersionedDBProvider(dbPath string) (*VersionedDBProvider, error) {
 
 // GetDBHandle gets the handle to a named database
 func (provider *VersionedDBProvider) GetDBHandle(dbName string, namespaceProvider statedb.NamespaceProvider) (statedb.VersionedDB, error) {
+	logger.Debugf("GetDBHandle()...") //TODO: delete this
 	return newVersionedDB(provider.dbProvider.GetDBHandle(dbName), dbName), nil
 }
 
@@ -114,14 +114,14 @@ func (vdb *versionedDB) BytesKeySupported() bool {
 // GetState implements method in VersionedDB interface
 func (vdb *versionedDB) GetState(namespace string, key string) (*statedb.VersionedValue, error) {
 	logger.Debugf("GetState(). ns=%s, key=%s", namespace, key)
-	dbVal, err := vdb.db.Get(encodeDataKey(namespace, key))
+	dbVal, err := vdb.db.Get(EncodeDataKey(namespace, key))
 	if err != nil {
 		return nil, err
 	}
 	if dbVal == nil {
 		return nil, nil
 	}
-	return decodeValue(dbVal)
+	return DecodeValue(dbVal)
 }
 
 // GetVersion implements method in VersionedDB interface
@@ -159,8 +159,9 @@ func (vdb *versionedDB) GetStateRangeScanIterator(namespace string, startKey str
 
 // GetStateRangeScanIteratorWithPagination implements method in VersionedDB interface
 func (vdb *versionedDB) GetStateRangeScanIteratorWithPagination(namespace string, startKey string, endKey string, pageSize int32) (statedb.QueryResultsIterator, error) {
-	dataStartKey := encodeDataKey(namespace, startKey)
-	dataEndKey := encodeDataKey(namespace, endKey)
+	logger.Debugf("GetStateRangeScanIteratorWithPagination()...") //TODO:delete this
+	dataStartKey := EncodeDataKey(namespace, startKey)
+	dataEndKey := EncodeDataKey(namespace, endKey)
 	if endKey == "" {
 		dataEndKey[len(dataEndKey)-1] = lastKeyIndicator
 	}
@@ -188,16 +189,17 @@ func (vdb *versionedDB) ApplyUpdates(batch *statedb.UpdateBatch, height *version
 	for _, ns := range namespaces {
 		updates := batch.GetUpdates(ns)
 		for k, vv := range updates {
-			dataKey := encodeDataKey(ns, k)
+			dataKey := EncodeDataKey(ns, k)
 			logger.Debugf("Channel [%s]: Applying key(string)=[%s] key(bytes)=[%#v]", vdb.dbName, string(dataKey), dataKey)
 
 			if vv.Value == nil {
 				dbBatch.Delete(dataKey)
 			} else {
-				encodedVal, err := encodeValue(vv)
+				encodedVal, err := EncodeValue(vv)
 				if err != nil {
 					return err
 				}
+				logger.Debugf("dbBatch.Put(dataKey=[%#v (%s)], encodedVal=[%#v (%s)])", dataKey, dataKey, encodedVal, encodedVal)
 				dbBatch.Put(dataKey, encodedVal)
 			}
 		}
@@ -255,8 +257,8 @@ func (vdb *versionedDB) importState(itr statedb.FullScanIterator, savepoint *ver
 		if versionedKV == nil {
 			break
 		}
-		dbKey := encodeDataKey(versionedKV.Namespace, versionedKV.Key)
-		dbValue, err := encodeValue(versionedKV.VersionedValue)
+		dbKey := EncodeDataKey(versionedKV.Namespace, versionedKV.Key)
+		dbValue, err := EncodeValue(versionedKV.VersionedValue)
 		if err != nil {
 			return err
 		}
@@ -279,18 +281,18 @@ func (vdb *versionedDB) IsEmpty() (bool, error) {
 	return vdb.db.IsEmpty()
 }
 
-func encodeDataKey(ns, key string) []byte {
+func EncodeDataKey(ns, key string) []byte {
 	k := append(dataKeyPrefix, []byte(ns)...)
 	k = append(k, nsKeySep...)
 	return append(k, []byte(key)...)
 }
 
-func decodeDataKey(encodedDataKey []byte) (string, string) {
+func DecodeDataKey(encodedDataKey []byte) (string, string) {
 	split := bytes.SplitN(encodedDataKey, nsKeySep, 2)
 	return string(split[0][1:]), string(split[1])
 }
 
-func dataKeyStarterForNextNamespace(ns string) []byte {
+func DataKeyStarterForNextNamespace(ns string) []byte {
 	k := append(dataKeyPrefix, []byte(ns)...)
 	return append(k, lastKeyIndicator)
 }
@@ -307,10 +309,13 @@ func newKVScanner(namespace string, dbItr iterator.Iterator, requestedLimit int3
 }
 
 func (scanner *kvScanner) Next() (*statedb.VersionedKV, error) {
+	logger.Debugf("kvScanner.Next()...") //TODO: delete this
 	if scanner.requestedLimit > 0 && scanner.totalRecordsReturned >= scanner.requestedLimit {
+		logger.Debugf("if-case scanner.requestedLimit=[%+v], scanner.totalRecordsReturned=[%+v]", scanner.requestedLimit, scanner.totalRecordsReturned) //TODO remove this
 		return nil, nil
 	}
 	if !scanner.dbItr.Next() {
+		logger.Debugf("if-case: Next returned false")
 		return nil, nil
 	}
 
@@ -318,8 +323,9 @@ func (scanner *kvScanner) Next() (*statedb.VersionedKV, error) {
 	dbVal := scanner.dbItr.Value()
 	dbValCopy := make([]byte, len(dbVal))
 	copy(dbValCopy, dbVal)
-	_, key := decodeDataKey(dbKey)
-	vv, err := decodeValue(dbValCopy)
+	_, key := DecodeDataKey(dbKey)
+	vv, err := DecodeValue(dbValCopy)
+	logger.Debugf("after iterator.Next(): dbKey=[%s (%#v)], key=[%s], vv=[%s (%#v)], dbVal=[%s]", dbKey, dbKey, key, vv, vv, dbValCopy)
 	if err != nil {
 		return nil, err
 	}
@@ -342,7 +348,7 @@ func (scanner *kvScanner) GetBookmarkAndClose() string {
 	retval := ""
 	if scanner.dbItr.Next() {
 		dbKey := scanner.dbItr.Key()
-		_, key := decodeDataKey(dbKey)
+		_, key := DecodeDataKey(dbKey)
 		retval = key
 	}
 	scanner.Close()
@@ -371,13 +377,13 @@ func newFullDBScanner(db *leveldbhelper.DBHandle, skipNamespace func(namespace s
 // Next returns the key-values in the lexical order of <Namespace, key>
 func (s *fullDBScanner) Next() (*statedb.VersionedKV, error) {
 	for s.dbItr.Next() {
-		ns, key := decodeDataKey(s.dbItr.Key())
+		ns, key := DecodeDataKey(s.dbItr.Key())
 		compositeKey := &statedb.CompositeKey{
 			Namespace: ns,
 			Key:       key,
 		}
-
-		versionedVal, err := decodeValue(s.dbItr.Value())
+		logger.Debugf("CompKey: %s (%#v)", compositeKey, compositeKey)
+		versionedVal, err := DecodeValue(s.dbItr.Value())
 		if err != nil {
 			return nil, err
 		}
@@ -389,7 +395,7 @@ func (s *fullDBScanner) Next() (*statedb.VersionedKV, error) {
 				VersionedValue: versionedVal,
 			}, nil
 		default:
-			s.dbItr.Seek(dataKeyStarterForNextNamespace(ns))
+			s.dbItr.Seek(DataKeyStarterForNextNamespace(ns))
 			s.dbItr.Prev()
 		}
 	}

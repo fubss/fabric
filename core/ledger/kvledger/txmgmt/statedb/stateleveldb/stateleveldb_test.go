@@ -1,6 +1,5 @@
 /*
 Copyright IBM Corp. All Rights Reserved.
-
 SPDX-License-Identifier: Apache-2.0
 */
 
@@ -54,9 +53,9 @@ func TestDataKeyEncoding(t *testing.T) {
 }
 
 func testDataKeyEncoding(t *testing.T, dbName string, ns string, key string) {
-	dataKey := encodeDataKey(ns, key)
+	dataKey := EncodeDataKey(ns, key)
 	t.Logf("dataKey=%#v", dataKey)
-	ns1, key1 := decodeDataKey(dataKey)
+	ns1, key1 := DecodeDataKey(dataKey)
 	require.Equal(t, ns, ns1)
 	require.Equal(t, key, key1)
 }

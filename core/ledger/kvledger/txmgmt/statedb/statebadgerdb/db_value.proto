@@ -3,7 +3,7 @@ Copyright IBM Corp. All Rights Reserved.
 
 SPDX-License-Identifier: Apache-2.0
 */
-
+/*
 syntax = "proto3";
 
 option go_package = "github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/statedb/statebadgerdb";
@@ -15,3 +15,4 @@ message DBValue {
     bytes value = 2;
     bytes metadata = 3;
 }
+*/

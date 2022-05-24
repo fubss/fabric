@@ -6,10 +6,12 @@ SPDX-License-Identifier: Apache-2.0
 
 package statebadgerdb
 
+/*
 import (
 	proto "github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric/core/ledger/internal/version"
 	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/statedb"
+
 )
 
 // encodeValue encodes the value, version, and metadata
@@ -42,3 +44,4 @@ func decodeValue(encodedValue []byte) (*statedb.VersionedValue, error) {
 	}
 	return &statedb.VersionedValue{Version: ver, Value: val, Metadata: metadata}, nil
 }
+*/

@@ -6,6 +6,7 @@ SPDX-License-Identifier: Apache-2.0
 
 package statebadgerdb
 
+/*
 import (
 	"fmt"
 	"testing"
@@ -51,3 +52,4 @@ func testEncodeDecodeVersionedValues(t *testing.T, v *statedb.VersionedValue) {
 	require.NoError(t, err)
 	require.Equal(t, v, decodedVal)
 }
+*/

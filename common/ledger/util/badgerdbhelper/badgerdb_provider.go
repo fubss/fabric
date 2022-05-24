@@ -157,6 +157,13 @@ type DBHandle struct {
 	closeFunc closeFunc
 }
 
+func (h *DBHandle) GetMaxBatchSize() int64 {
+	return h.db.db.MaxBatchSize()
+}
+func (h *DBHandle) GetMaxBatchCount() int64 {
+	return h.db.db.MaxBatchCount()
+}
+
 // Get returns the value for the given key
 func (h *DBHandle) Get(key []byte) ([]byte, error) {
 	return h.db.Get(constructLevelKey(h.dbName, key))
@@ -270,7 +277,7 @@ func (h *DBHandle) GetIterator(startKey []byte, endKey []byte) (*Iterator, error
 		itr.Release()
 		return nil, errors.Wrapf(err, "internal leveldb error while obtaining db iterator")
 	}*/
-	return &Iterator{h.dbName, itr, true, false}, nil
+	return &Iterator{h.dbName, itr, true, false, false}, nil
 }
 
 // Close closes the DBHandle after its db data have been deleted
@@ -307,6 +314,7 @@ type Iterator struct {
 	RangeIterator
 	justOpened bool
 	outOfRange bool
+	IgnoreNext bool
 }
 
 // Key wraps actual leveldb iterator method
@@ -324,10 +332,20 @@ func (itr *Iterator) Next() bool {
 	if itr.justOpened {
 		itr.iterator.Seek(itr.startKey)
 		itr.justOpened = false
+		if itr.endKey != nil && bytes.Compare(itr.endKey, itr.iterator.Item().Key()) <= 0 {
+			itr.outOfRange = true
+			return false
+		}
 		return itr.iterator.ValidForPrefix([]byte(itr.dbName))
 	}
-
-	itr.iterator.Next()
+	if !itr.IgnoreNext {
+		itr.iterator.Next()
+	}
+	itr.IgnoreNext = false
+	if itr.endKey != nil && bytes.Compare(itr.endKey, itr.iterator.Item().Key()) <= 0 {
+		itr.outOfRange = true
+		return false
+	}
 	if !itr.iterator.ValidForPrefix([]byte(itr.dbName)) {
 		itr.outOfRange = true
 		return false
