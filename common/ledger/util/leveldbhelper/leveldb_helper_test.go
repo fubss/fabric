@@ -268,8 +268,8 @@ func BenchmarkGetLevelDBWithBigData(b *testing.B) {
 func BenchmarkPutLevelDB(b *testing.B) {
 	db := createAndOpenDB()
 	keysAmount := 100000
-	keys := make([][]byte, keysAmount)
-	values := make([][]byte, keysAmount)
+	keys := make([][]byte, 0, keysAmount)
+	values := make([][]byte, 0, keysAmount)
 	for i := 0; i < keysAmount; i++ {
 		key := []byte(createTestKey(i))
 		value := []byte(createTestValue("testdb", i))
