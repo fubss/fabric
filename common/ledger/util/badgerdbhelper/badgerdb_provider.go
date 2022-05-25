@@ -247,6 +247,9 @@ func (h *DBHandle) NewUpdateBatch() *UpdateBatch {
 
 // WriteBatch writes a batch in an atomic way
 func (h *DBHandle) WriteBatch(batch *UpdateBatch, sync bool) error {
+	if h.db.db.IsClosed() {
+		return errors.New("error writing batch to badgerdb")
+	}
 	if batch == nil || batch.Error() != nil {
 		return nil
 	}
@@ -332,21 +335,24 @@ func (itr *Iterator) Next() bool {
 	if itr.justOpened {
 		itr.iterator.Seek(itr.startKey)
 		itr.justOpened = false
+		if !itr.iterator.ValidForPrefix([]byte(itr.dbName)) {
+			return false
+		}
 		if itr.endKey != nil && bytes.Compare(itr.endKey, itr.iterator.Item().Key()) <= 0 {
 			itr.outOfRange = true
 			return false
 		}
-		return itr.iterator.ValidForPrefix([]byte(itr.dbName))
+		return true
 	}
 	if !itr.IgnoreNext {
 		itr.iterator.Next()
 	}
 	itr.IgnoreNext = false
-	if itr.endKey != nil && bytes.Compare(itr.endKey, itr.iterator.Item().Key()) <= 0 {
+	if !itr.iterator.ValidForPrefix([]byte(itr.dbName)) {
 		itr.outOfRange = true
 		return false
 	}
-	if !itr.iterator.ValidForPrefix([]byte(itr.dbName)) {
+	if itr.endKey != nil && bytes.Compare(itr.endKey, itr.iterator.Item().Key()) <= 0 {
 		itr.outOfRange = true
 		return false
 	}

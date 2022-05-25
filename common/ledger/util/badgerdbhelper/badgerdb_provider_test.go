@@ -218,7 +218,7 @@ func TestDrop(t *testing.T) {
 		db2.Put([]byte(createTestKey(i)), []byte(createTestValue("db2", i)), false)
 	}
 	// db3 is used to test remove when multiple batches are needed (each long key has 125 bytes)
-	for i := 0; i < 10000; i++ {
+	for i := 0; i < 2; i++ {
 		db3.Put([]byte(createTestLongKey(i)), []byte(createTestValue("db3", i)), false)
 	}
 
@@ -239,8 +239,8 @@ func TestDrop(t *testing.T) {
 		},
 		{
 			db:             db3,
-			expectedKeys:   createTestLongKeys(0, 9999),
-			expectedValues: createTestValues("db3", 0, 9999),
+			expectedKeys:   createTestLongKeys(0, 1),
+			expectedValues: createTestValues("db3", 0, 1),
 		},
 	}
 
