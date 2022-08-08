@@ -12,8 +12,13 @@ RUN apk add --no-cache tzdata
 # - docker run --rm debian:stretch grep '^hosts:' /etc/nsswitch.conf
 RUN echo 'hosts: files dns' > /etc/nsswitch.conf
 
+<<<<<<< Updated upstream
 #FROM golang:${GO_VER}-alpine${ALPINE_VER} as golang
 FROM fubss/rocksdb:6.27.3-golang${GO_VER}-alpine${ALPINE_VER} as golang-rocksdb
+=======
+FROM golang:${GO_VER}-alpine${ALPINE_VER} as golang
+RUN apk add -X https://dl-cdn.alpinelinux.org/alpine/v3.16/main -u alpine-keys
+>>>>>>> Stashed changes
 RUN apk add --no-cache \
 	bash \
 	binutils-gold \

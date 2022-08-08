@@ -24,6 +24,7 @@ ARG GO_TAGS
 RUN make tools GO_TAGS=${GO_TAGS}
 
 FROM golang:${GO_VER}-alpine${ALPINE_VER}
+RUN apk add -X https://dl-cdn.alpinelinux.org/alpine/v3.16/main -u alpine-keys
 # git is required to support `go list -m`
 RUN apk add --no-cache \
 	bash \
