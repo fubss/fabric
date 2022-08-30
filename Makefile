@@ -46,8 +46,8 @@
 #   - unit-test - runs the go-test based unit tests
 #   - verify - runs unit tests for only the changed package tree
 
-ALPINE_VER ?= 3.14
-BASE_VERSION = 2.4.0
+ALPINE_VER ?= 3.15
+BASE_VERSION = 2.4.0-badgerdb-tune-1
 
 # 3rd party image version
 # These versions are also set in the runners in ./integration/runners/
@@ -78,7 +78,7 @@ METADATA_VAR += CommitSHA=$(EXTRA_VERSION)
 METADATA_VAR += BaseDockerLabel=$(BASE_DOCKER_LABEL)
 METADATA_VAR += DockerNamespace=$(DOCKER_NS)
 
-GO_VER = 1.16.7
+GO_VER = 1.17
 GO_TAGS ?=
 
 RELEASE_EXES = orderer $(TOOLS_EXES)

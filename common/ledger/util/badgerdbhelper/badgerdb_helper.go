@@ -76,7 +76,9 @@ func (dbInst *DB) Open() {
 			panic(fmt.Sprintf("Error opening badgerdb: %s", err))
 		}
 	}
-	if dbInst.db, err = badger.Open(badger.DefaultOptions(dbPath)); err != nil {
+	tunedOptions := badger.DefaultOptions(dbPath)
+	tunedOptions.WithValueLogFileSize(1 << 20)
+	if dbInst.db, err = badger.Open(tunedOptions); err != nil {
 		panic(fmt.Sprintf("Error opening badgerdb: %s", err))
 	}
 	dbInst.dbState = opened
