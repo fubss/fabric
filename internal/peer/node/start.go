@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/felixge/fgprof"
+	"github.com/felixge/fgtrace"
 	docker "github.com/fsouza/go-dockerclient"
 	"github.com/golang/protobuf/proto"
 	cb "github.com/hyperledger/fabric-protos-go/common"
@@ -850,6 +851,8 @@ func serve(args []string) error {
 	// Start profiling http endpoint if enabled
 	if profileEnabled {
 		http.DefaultServeMux.Handle("/debug/fgprof", fgprof.Handler())
+		http.DefaultServeMux.Handle("/debug/fgtrace", fgtrace.Config{})
+		http.ListenAndServe(":1234", nil)
 		go func() {
 			logger.Infof("Starting profiling server with listenAddress = %s", profileListenAddress)
 			if profileErr := http.ListenAndServe(profileListenAddress, nil); profileErr != nil {
