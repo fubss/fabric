@@ -852,7 +852,12 @@ func serve(args []string) error {
 	if profileEnabled {
 		http.DefaultServeMux.Handle("/debug/fgprof", fgprof.Handler())
 		http.DefaultServeMux.Handle("/debug/fgtrace", fgtrace.Config{})
-		http.ListenAndServe(":1234", nil)
+		go func() {
+			logger.Info("Starting tracing server with listenAddress = http://localhost:1234")
+			if traceErr := http.ListenAndServe("0.0.0.0:1234", nil); traceErr != nil {
+				logger.Errorf("Error starting tracer: %s", traceErr)
+			}
+		}()
 		go func() {
 			logger.Infof("Starting profiling server with listenAddress = %s", profileListenAddress)
 			if profileErr := http.ListenAndServe(profileListenAddress, nil); profileErr != nil {

@@ -17,8 +17,8 @@ require (
 	github.com/eapache/go-resiliency v1.2.0 // indirect
 	github.com/eapache/go-xerial-snappy v0.0.0-20180814174437-776d5712da21 // indirect
 	github.com/eapache/queue v1.1.0 // indirect
-	github.com/felixge/fgprof v0.9.3 // indirect
-	github.com/felixge/fgtrace v0.2.0 // indirect
+	github.com/felixge/fgprof v0.9.3
+	github.com/felixge/fgtrace v0.2.0
 	github.com/frankban/quicktest v1.11.3 // indirect
 	github.com/fsouza/go-dockerclient v1.7.0
 	github.com/go-kit/kit v0.9.0
