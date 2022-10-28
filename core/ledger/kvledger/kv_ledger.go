@@ -512,8 +512,8 @@ func (l *kvLedger) GetTransactionByID(txID string) (*peer.ProcessedTransaction, 
 
 // GetBlockchainInfo returns basic info about blockchain
 func (l *kvLedger) GetBlockchainInfo() (*common.BlockchainInfo, error) {
-	l.blockAPIsRWLock.RLock()
-	defer l.blockAPIsRWLock.RUnlock()
+	//l.blockAPIsRWLock.RLock()
+	//defer l.blockAPIsRWLock.RUnlock()
 	bcInfo, err := l.blockStore.GetBlockchainInfo()
 	return bcInfo, err
 }
@@ -548,8 +548,8 @@ func (l *kvLedger) GetBlockByHash(blockHash []byte) (*common.Block, error) {
 
 // GetBlockByTxID returns a block which contains a transaction
 func (l *kvLedger) GetBlockByTxID(txID string) (*common.Block, error) {
-	l.blockAPIsRWLock.RLock()
-	defer l.blockAPIsRWLock.RUnlock()
+	//l.blockAPIsRWLock.RLock()
+	//defer l.blockAPIsRWLock.RUnlock()
 	block, err := l.blockStore.RetrieveBlockByTxID(txID)
 	return block, err
 }
