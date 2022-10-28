@@ -884,6 +884,7 @@ func FindPKCS11Lib() (lib, pin, label string) {
 		possibilities := []string{
 			"/usr/lib/softhsm/libsofthsm2.so",                  // Debian
 			"/usr/lib/x86_64-linux-gnu/softhsm/libsofthsm2.so", // Ubuntu
+			"/usr/local/lib/softhsm/libsofthsm2.so", // My machine location
 		}
 		for _, path := range possibilities {
 			if _, err := os.Stat(path); !os.IsNotExist(err) {
