@@ -984,8 +984,8 @@ func (itr *blocksItr) Next() (commonledger.QueryResult, error) {
 	if err != nil {
 		return nil, err
 	}
-	itr.blockAPIsRWLock.RLock()
-	itr.blockAPIsRWLock.RUnlock() //lint:ignore SA2001 syncpoint
+	//itr.blockAPIsRWLock.RLock()
+	//itr.blockAPIsRWLock.RUnlock() //lint:ignore SA2001 syncpoint
 	return block, nil
 }
 
