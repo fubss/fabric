@@ -52,8 +52,7 @@ func CreateDB(conf *Conf) *DB {
 
 // Open opens the underlying db
 func (dbInst *DB) Open() {
-	dbInst.mutex.Lock()
-	defer dbInst.mutex.Unlock()
+
 	if dbInst.dbState == opened {
 		return
 	}
@@ -89,8 +88,6 @@ func (dbInst *DB) Open() {
 // IsEmpty returns whether or not a database is empty
 func (dbInst *DB) IsEmpty() (bool, error) {
 	var hasItems bool
-	dbInst.mutex.RLock()
-	defer dbInst.mutex.RUnlock()
 	err := dbInst.db.View(func(tx *bolt.Tx) error {
 		// Assume bucket exists and has keys
 		b := tx.Bucket([]byte("fabric"))
@@ -113,8 +110,6 @@ func (dbInst *DB) IsEmpty() (bool, error) {
 
 // Close closes the underlying db
 func (dbInst *DB) Close() {
-	dbInst.mutex.Lock()
-	defer dbInst.mutex.Unlock()
 	if dbInst.dbState == closed {
 		return
 	}
@@ -127,8 +122,6 @@ func (dbInst *DB) Close() {
 // Get returns the value for the given key
 func (dbInst *DB) Get(key []byte) ([]byte, error) {
 	var value []byte
-	dbInst.mutex.RLock()
-	defer dbInst.mutex.RUnlock()
 
 	err := dbInst.db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte("fabric"))
@@ -152,8 +145,7 @@ func (dbInst *DB) Get(key []byte) ([]byte, error) {
 
 // Put saves the key/value
 func (dbInst *DB) Put(key []byte, value []byte, sync bool) error {
-	dbInst.mutex.RLock()
-	defer dbInst.mutex.RUnlock()
+
 	if !sync {
 		dbInst.setSyncOffOnce()
 	}
@@ -178,8 +170,7 @@ func (dbInst *DB) Put(key []byte, value []byte, sync bool) error {
 
 // Delete deletes the given key
 func (dbInst *DB) Delete(key []byte, sync bool) error {
-	dbInst.mutex.RLock()
-	defer dbInst.mutex.RUnlock()
+
 	if !sync {
 		dbInst.setSyncOffOnce()
 	}
@@ -204,8 +195,7 @@ type IteratorHelper struct {
 // TODO: close iterator somewhere
 func (dbInst *DB) GetIterator(startKey []byte, endKey []byte) (*bolt.Cursor, *bolt.Tx, []byte, []byte, error) {
 	//logger.Debugf("Getting new BoltDB Iterator... for start key: [%s (%+v) and end key: [%s (%+v)]", startKey, startKey, endKey, endKey)
-	dbInst.mutex.RLock()
-	defer dbInst.mutex.RUnlock()
+
 	tx, err := dbInst.db.Begin(false)
 	if err != nil {
 		logger.Errorf("Error after creating boltdb tx: %+v", err)
@@ -223,8 +213,7 @@ func (dbInst *DB) GetIterator(startKey []byte, endKey []byte) (*bolt.Cursor, *bo
 // several goroutines calling it.
 func (dbInst *DB) WriteBatch(tx *bolt.Tx, sync bool) error {
 	defer tx.Rollback() //it was put to the beginning to not to forgot close the tx if smth happens
-	dbInst.mutex.RLock()
-	defer dbInst.mutex.RUnlock()
+
 	if !sync {
 		dbInst.setSyncOffOnce()
 	}
