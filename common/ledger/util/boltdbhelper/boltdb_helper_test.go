@@ -44,7 +44,7 @@ func TestBoltDBHelperReadWithoutOpen(t *testing.T) {
 
 func TestBoltDBHelper(t *testing.T) {
 	env := newTestDBEnv(t, testDBPath)
-	// defer env.cleanup()
+	defer env.cleanup()
 	db := env.db
 
 	db.Open()

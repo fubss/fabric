@@ -420,6 +420,9 @@ github.com/syndtr/goleveldb/leveldb/util
 github.com/tedsuo/ifrit
 github.com/tedsuo/ifrit/ginkgomon_v2
 github.com/tedsuo/ifrit/grouper
+# go.etcd.io/bbolt v1.3.6
+## explicit; go 1.12
+go.etcd.io/bbolt
 # go.etcd.io/etcd/client/pkg/v3 v3.5.1
 ## explicit; go 1.16
 go.etcd.io/etcd/client/pkg/v3/fileutil
