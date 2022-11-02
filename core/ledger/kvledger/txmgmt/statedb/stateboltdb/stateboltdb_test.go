@@ -1,10 +1,4 @@
-/*
-Copyright IBM Corp. All Rights Reserved.
-
-SPDX-License-Identifier: Apache-2.0
-*/
-
-package stateleveldb
+package stateboltdb
 
 import (
 	"errors"
@@ -13,8 +7,14 @@ import (
 	"github.com/hyperledger/fabric/core/ledger/internal/version"
 	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/statedb"
 	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/statedb/commontests"
+	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/statedb/stateleveldb"
 	"github.com/stretchr/testify/require"
 )
+
+/*func TestMain(m *testing.M) {
+	flogging.ActivateSpec("stateboltdb=debug")
+	os.Exit(m.Run())
+}*/
 
 func TestBasicRW(t *testing.T) {
 	env := NewTestVDBEnv(t)
@@ -43,7 +43,7 @@ func TestIterator(t *testing.T) {
 		require.NoError(t, err)
 		env.DBProvider.Close()
 		itr, err := db.GetStateRangeScanIterator("ns1", "", "")
-		require.EqualError(t, err, "internal leveldb error while obtaining db iterator: leveldb: closed")
+		require.EqualError(t, err, "internal boltdb error while obtaining db iterator: database not open")
 		require.Nil(t, itr)
 	})
 }
@@ -54,15 +54,15 @@ func TestDataKeyEncoding(t *testing.T) {
 }
 
 func testDataKeyEncoding(t *testing.T, dbName string, ns string, key string) {
-	dataKey := EncodeDataKey(ns, key)
+	dataKey := stateleveldb.EncodeDataKey(ns, key)
 	t.Logf("dataKey=%#v", dataKey)
-	ns1, key1 := DecodeDataKey(dataKey)
+	ns1, key1 := stateleveldb.DecodeDataKey(dataKey)
 	require.Equal(t, ns, ns1)
 	require.Equal(t, key, key1)
 }
 
-// TestQueryOnLevelDB tests queries on levelDB.
-func TestQueryOnLevelDB(t *testing.T) {
+// TestQueryOnBoltDB tests queries on boltDB.
+func TestQueryOnBoltDB(t *testing.T) {
 	env := NewTestVDBEnv(t)
 	defer env.Cleanup()
 	db, err := env.DBProvider.GetDBHandle("testquery", nil)
@@ -77,10 +77,10 @@ func TestQueryOnLevelDB(t *testing.T) {
 	require.NoError(t, db.ApplyUpdates(batch, savePoint))
 
 	// query for owner=jerry, use namespace "ns1"
-	// As queries are not supported in levelDB, call to ExecuteQuery()
+	// As queries are not supported in boltDB, call to ExecuteQuery()
 	// should return a error message
 	itr, err := db.ExecuteQuery("ns1", `{"selector":{"owner":"jerry"}}`)
-	require.Error(t, err, "ExecuteQuery not supported for leveldb")
+	require.Error(t, err, "ExecuteQuery not supported for boltdb")
 	require.Nil(t, itr)
 }
 
@@ -107,7 +107,7 @@ func TestUtilityFunctions(t *testing.T) {
 	require.True(t, db.BytesKeySupported())
 
 	// ValidateKeyValue should return nil for a valid key and value
-	require.NoError(t, db.ValidateKeyValue("testKey", []byte("testValue")), "leveldb should accept all key-values")
+	require.NoError(t, db.ValidateKeyValue("testKey", []byte("testValue")), "boltdb should accept all key-values")
 }
 
 func TestValueAndMetadataWrites(t *testing.T) {
@@ -177,7 +177,7 @@ func TestFullScanIteratorErrorPropagation(t *testing.T) {
 			return false
 		},
 	)
-	require.Contains(t, err.Error(), "internal leveldb error while obtaining db iterator:")
+	require.Contains(t, err.Error(), "error while obtaining db iterator")
 
 	// error from function Next
 	reInitEnv()
@@ -189,7 +189,7 @@ func TestFullScanIteratorErrorPropagation(t *testing.T) {
 	require.NoError(t, err)
 	itr.Close()
 	_, err = itr.Next()
-	require.Contains(t, err.Error(), "internal leveldb error while retrieving data from db iterator:")
+	require.Contains(t, err.Error(), "internal boltdb error while retrieving data from db iterator: iterator is not valid")
 }
 
 func TestImportStateErrorPropagation(t *testing.T) {
@@ -239,7 +239,7 @@ func TestImportStateErrorPropagation(t *testing.T) {
 				},
 			},
 		)
-		require.Contains(t, err.Error(), "error writing batch to leveldb")
+		require.Contains(t, err.Error(), "Error")
 	})
 }
 
@@ -264,7 +264,7 @@ func TestDropErrorPath(t *testing.T) {
 	require.NoError(t, err)
 
 	env.DBProvider.Close()
-	require.EqualError(t, env.DBProvider.Drop("testdroperror"), "internal leveldb error while obtaining db iterator: leveldb: closed")
+	require.EqualError(t, env.DBProvider.Drop("testdroperror"), "internal boltdb error while obtaining db iterator: database not open")
 }
 
 type dummyFullScanIter struct {
