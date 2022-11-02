@@ -32,7 +32,8 @@ func PvtDataStorePath(rootFSPath string) string {
 
 // StateDBPath returns the absolute path of state level DB
 func StateDBPath(rootFSPath string) string {
-	return filepath.Join(rootFSPath, "stateBoltdb")
+	//this catalog name doesn't mean that StateDB is goleveldb
+	return filepath.Join(rootFSPath, "stateLeveldb")
 }
 
 // HistoryDBPath returns the absolute path of history DB
