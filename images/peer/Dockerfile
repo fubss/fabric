@@ -12,18 +12,22 @@ RUN apk add --no-cache tzdata
 # - docker run --rm debian:stretch grep '^hosts:' /etc/nsswitch.conf
 RUN echo 'hosts: files dns' > /etc/nsswitch.conf
 
-FROM golang:${GO_VER}-alpine${ALPINE_VER} as golang
+#FROM golang:${GO_VER}-alpine${ALPINE_VER} as golang
+FROM fubss/rocksdb:6.27.3-golang${GO_VER}-alpine${ALPINE_VER} as golang-rocksdb
+RUN apk add alpine-keys=2.4.0-r0
+RUN apk upgrade
+RUN apk add -X https://dl-cdn.alpinelinux.org/alpine/v3.16/main -u alpine-keys
 RUN apk add --no-cache \
 	bash \
 	binutils-gold \
 	gcc \
 	git \
 	make \
-	musl-dev
+    gflags
 ADD . $GOPATH/src/github.com/hyperledger/fabric
 WORKDIR $GOPATH/src/github.com/hyperledger/fabric
 
-FROM golang as peer
+FROM golang-rocksdb as peer
 ARG GO_TAGS
 RUN CGO_ENABLED=0 make peer GO_TAGS=${GO_TAGS}
 RUN CGO_ENABLED=0 make ccaasbuilder
@@ -40,5 +44,20 @@ COPY --from=peer /go/src/github.com/hyperledger/fabric/build/bin /usr/local/bin
 COPY --from=peer /go/src/github.com/hyperledger/fabric/sampleconfig/msp ${FABRIC_CFG_PATH}/msp
 COPY --from=peer /go/src/github.com/hyperledger/fabric/sampleconfig/core.yaml ${FABRIC_CFG_PATH}/core.yaml
 COPY --from=peer /go/src/github.com/hyperledger/fabric/release/linux-platform/builders/ccaas/bin/ /opt/hyperledger/ccaas_builder/bin/
+##Copying dynamic c libraries (*.so)
+COPY --from=peer /usr/local/rocksdb/lib /usr/local/rocksdb/lib
+COPY --from=peer /usr/lib /usr/lib
+COPY --from=peer /usr/local/rocksdb /usr/local/rocksdb
+COPY --from=peer /usr/include /usr/include
+#==================================================================
+#=======================T__E__S__T__I__N__G========================
+#==================================================================
+#COPY --from=golang-rocksdb /usr/local/go/ /usr/local/go/
+#ENV PATH="/usr/local/go/bin:${PATH}"
+#RUN apk add --no-cache \
+#	gcc
+#RUN echo "@testing http://nl.alpinelinux.org/alpine/edge/testing" >>/etc/apk/repositories
+#RUN apk add --update --no-cache zlib zlib-dev bzip2 bzip2-dev snappy snappy-dev lz4 lz4-dev zstd@testing zstd-dev@testing libtbb-dev@testing libtbb@testing
+#==================================================================
 EXPOSE 7051
 CMD ["peer","node","start"]

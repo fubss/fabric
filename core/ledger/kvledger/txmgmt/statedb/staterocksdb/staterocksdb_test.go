@@ -4,7 +4,7 @@ Copyright IBM Corp. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package stateleveldb
+package staterocksdb
 
 import (
 	"errors"
@@ -13,6 +13,7 @@ import (
 	"github.com/hyperledger/fabric/core/ledger/internal/version"
 	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/statedb"
 	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/statedb/commontests"
+	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/statedb/stateleveldb"
 	"github.com/stretchr/testify/require"
 )
 
@@ -43,7 +44,7 @@ func TestIterator(t *testing.T) {
 		require.NoError(t, err)
 		env.DBProvider.Close()
 		itr, err := db.GetStateRangeScanIterator("ns1", "", "")
-		require.EqualError(t, err, "internal leveldb error while obtaining db iterator: leveldb: closed")
+		require.EqualError(t, err, "error while obtaining db iterator: rocksdb: closed")
 		require.Nil(t, itr)
 	})
 }
@@ -54,15 +55,15 @@ func TestDataKeyEncoding(t *testing.T) {
 }
 
 func testDataKeyEncoding(t *testing.T, dbName string, ns string, key string) {
-	dataKey := EncodeDataKey(ns, key)
+	dataKey := stateleveldb.EncodeDataKey(ns, key)
 	t.Logf("dataKey=%#v", dataKey)
-	ns1, key1 := DecodeDataKey(dataKey)
+	ns1, key1 := stateleveldb.DecodeDataKey(dataKey)
 	require.Equal(t, ns, ns1)
 	require.Equal(t, key, key1)
 }
 
-// TestQueryOnLevelDB tests queries on levelDB.
-func TestQueryOnLevelDB(t *testing.T) {
+// TestQueryOnRocksDB tests queries on levelDB.
+func TestQueryOnRocksDB(t *testing.T) {
 	env := NewTestVDBEnv(t)
 	defer env.Cleanup()
 	db, err := env.DBProvider.GetDBHandle("testquery", nil)
@@ -177,7 +178,7 @@ func TestFullScanIteratorErrorPropagation(t *testing.T) {
 			return false
 		},
 	)
-	require.Contains(t, err.Error(), "internal leveldb error while obtaining db iterator:")
+	require.Contains(t, err.Error(), "error while obtaining db iterator")
 
 	// error from function Next
 	reInitEnv()
@@ -189,7 +190,7 @@ func TestFullScanIteratorErrorPropagation(t *testing.T) {
 	require.NoError(t, err)
 	itr.Close()
 	_, err = itr.Next()
-	require.Contains(t, err.Error(), "internal leveldb error while retrieving data from db iterator:")
+	require.Contains(t, err.Error(), "internal rocksdb error while retrieving data from db iterator: iterator is not valid")
 }
 
 func TestImportStateErrorPropagation(t *testing.T) {
@@ -239,7 +240,7 @@ func TestImportStateErrorPropagation(t *testing.T) {
 				},
 			},
 		)
-		require.Contains(t, err.Error(), "error writing batch to leveldb")
+		require.Contains(t, err.Error(), "error writing batch to rocksdb")
 	})
 }
 
@@ -264,7 +265,7 @@ func TestDropErrorPath(t *testing.T) {
 	require.NoError(t, err)
 
 	env.DBProvider.Close()
-	require.EqualError(t, env.DBProvider.Drop("testdroperror"), "internal leveldb error while obtaining db iterator: leveldb: closed")
+	require.EqualError(t, env.DBProvider.Drop("testdroperror"), "error while obtaining db iterator: rocksdb: closed")
 }
 
 type dummyFullScanIter struct {
