@@ -20,7 +20,7 @@ const (
 )
 
 var (
-	dbNameKeySep     = []byte{0x00} //TODO: should we change this to different from leveldb?
+	dbNameKeySep     = []byte{0x00} // TODO: should we change this to different from leveldb?
 	lastKeyIndicator = byte(0x01)
 	formatVersionKey = []byte{'f'} // a single key in db whose value indicates the version of the data format
 )
@@ -89,7 +89,7 @@ func openDBAndCheckFormat(conf *Conf) (d *DB, e error) {
 	if err != nil {
 		return nil, err
 	}
-	logger.Debugf("rocks db IsEmpty()=%t", dbEmpty) //TODO: delete this
+	logger.Debugf("rocks db IsEmpty()=%t", dbEmpty) // TODO: delete this
 
 	if dbEmpty && conf.ExpectedFormat != "" {
 		logger.Debugf("DB is empty Setting db format as %s", conf.ExpectedFormat)
@@ -264,7 +264,6 @@ func (h *DBHandle) GetIterator(startKey []byte, endKey []byte) (*Iterator, error
 		logger.Debugf("endKey is nil: eKey=[%s(%#v)]", eKey, eKey)
 	} else {
 		logger.Debugf("endKey is not nil: (%#v)", endKey)
-
 	}
 	logger.Debugf("Constructing iterator with sKey=[%s(%#v)] and eKey=[%s(%#v)]", sKey, sKey, eKey, eKey)
 	itr, err := h.db.GetIterator(sKey, eKey)
@@ -280,7 +279,8 @@ func (h *DBHandle) GetIterator(startKey []byte, endKey []byte) (*Iterator, error
 	return &Iterator{
 			dbName:   h.dbName,
 			Iterator: itr.Iterator,
-			ro:       itr.ro},
+			ro:       itr.ro,
+		},
 		nil
 }
 
@@ -317,9 +317,9 @@ type Iterator struct {
 	ro *rocksdb.ReadOptions
 }
 
-//Next wraps actual rocksdb iterator method.
-//It prevents a fatal error when Next() called after the last db key
-//if iterator.Valid() == false
+// Next wraps actual rocksdb iterator method.
+// It prevents a fatal error when Next() called after the last db key
+// if iterator.Valid() == false
 func (itr *Iterator) Next() {
 	if itr.Iterator.Valid() {
 		itr.Iterator.Next()
@@ -374,7 +374,7 @@ func (itr *Iterator) Close() {
 	itr.ro.Destroy()
 }
 
-//TODO: should we make the mechanism differ from level db one?
+// TODO: should we make the mechanism differ from level db one?
 func constructRocksKey(dbName string, key []byte) []byte {
 	return append(append([]byte(dbName), dbNameKeySep...), key...)
 }

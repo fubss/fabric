@@ -68,12 +68,12 @@ func NewDBProvider(
 			return nil, err
 		}
 	} else if stateDBConf != nil && stateDBConf.StateDatabase == ledger.GoRocksDB {
-		logger.Debugf("creating grocksdb statedb provider...") //TODO: delete this
+		logger.Debugf("creating grocksdb statedb provider...") // TODO: delete this
 		if vdbProvider, err = staterocksdb.NewVersionedDBProvider(stateDBConf.StateDBPath); err != nil {
 			return nil, err
 		}
 	} else {
-		logger.Debugf("creating leveldb statedb provider...") //TODO: delete this
+		logger.Debugf("creating leveldb statedb provider...") // TODO: delete this
 		if vdbProvider, err = stateleveldb.NewVersionedDBProvider(stateDBConf.StateDBPath); err != nil {
 			return nil, err
 		}

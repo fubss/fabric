@@ -57,12 +57,12 @@ func (dbInst *DB) Open() {
 	if dbInst.dbState == opened {
 		return
 	}
-	//block based table from the example
-	//bbto := rocksdb.NewDefaultBlockBasedTableOptions()
-	//bbto.SetBlockCache(rocksdb.NewLRUCache(3 << 30)) //3 GB
+	// block based table from the example
+	// bbto := rocksdb.NewDefaultBlockBasedTableOptions()
+	// bbto.SetBlockCache(rocksdb.NewLRUCache(3 << 30)) //3 GB
 
 	dbOpts := rocksdb.NewDefaultOptions()
-	//dbOpts.SetBlockBasedTableFactory(bbto)
+	// dbOpts.SetBlockBasedTableFactory(bbto)
 
 	dbPath := dbInst.conf.DBPath
 	var err error
@@ -72,7 +72,7 @@ func (dbInst *DB) Open() {
 	if err != nil {
 		panic(fmt.Sprintf("Error creating dir if missing: %s", err))
 	}
-	dbOpts.SetParanoidChecks(false) //docs says that default value is false
+	dbOpts.SetParanoidChecks(false) // docs says that default value is false
 	dbOpts.SetCreateIfMissing(isDirEmpty)
 	if dbInst.db, err = rocksdb.OpenDb(dbOpts, dbPath); err != nil {
 		panic(fmt.Sprintf("Error opening rocksdb: %s", err))
@@ -106,7 +106,7 @@ func (dbInst *DB) Close() {
 		return
 	}
 	logger.Debugf("Closing db...")
-	dbInst.db.Close() //TODO: should we check if db have been already closed here?
+	dbInst.db.Close() // TODO: should we check if db have been already closed here?
 	dbInst.dbState = closed
 }
 
@@ -131,7 +131,7 @@ func (dbInst *DB) Get(key []byte) ([]byte, error) {
 	rocksdbValue.Free()
 	logger.Debugf("got data [%s]", value)
 	if len(value) == 0 {
-		return nil, nil //module require asserts nil for empty byte slices
+		return nil, nil // module require asserts nil for empty byte slices
 	}
 	return value, nil
 }
@@ -175,20 +175,20 @@ func (dbInst *DB) Delete(key []byte, sync bool) error {
 // IteratorHelper extends actual rocksdb iterator
 type IteratorHelper struct {
 	*rocksdb.Iterator
-	ro *rocksdb.ReadOptions //we have to destroy them after iterator will be closed
+	ro *rocksdb.ReadOptions // we have to destroy them after iterator will be closed
 }
 
 // GetIterator returns an iterator over key-value store. The iterator should be closed after the use.
 // The resultset contains all the keys that are present in the db between the startKey (inclusive) and the endKey (exclusive).
 // A nil startKey represents the first available key and a nil endKey represent a logical key after the last available key
 func (dbInst *DB) GetIterator(startKey []byte, endKey []byte) (*IteratorHelper, error) {
-	logger.Debugf("Getting new RocksDB Iterator... for start key: [%s (%+v) and end key: [%s (%+v)]", startKey, startKey, endKey, endKey) //TODO: delete this
+	logger.Debugf("Getting new RocksDB Iterator... for start key: [%s (%+v) and end key: [%s (%+v)]", startKey, startKey, endKey, endKey) // TODO: delete this
 	if dbInst.dbState == closed {
 		err := errors.New("error while obtaining db iterator: rocksdb: closed")
 		logger.Debugf("itr.Err()=[%+v]. Impossible to create an iterator", err)
 		return nil, err
 	}
-	//ro := dbInst.readOpts
+	// ro := dbInst.readOpts
 	ro := rocksdb.NewDefaultReadOptions()
 	// Docs says that If you want to avoid disturbing your live traffic
 	// while doing the bulk read, be sure to call SetFillCache(false)
@@ -208,13 +208,14 @@ func (dbInst *DB) GetIterator(startKey []byte, endKey []byte) (*IteratorHelper, 
 	ni.Seek(startKey)
 	return &IteratorHelper{
 			Iterator: ni,
-			ro:       ro},
+			ro:       ro,
+		},
 		nil
 }
 
 // WriteBatch writes a batch
 func (dbInst *DB) WriteBatch(batch *rocksdb.WriteBatch, sync bool) error {
-	logger.Debugf("WritingBatch.Count()=[%d]", batch.Count()) //TODO: delete this
+	logger.Debugf("WritingBatch.Count()=[%d]", batch.Count()) // TODO: delete this
 	dbInst.mutex.RLock()
 	defer dbInst.mutex.RUnlock()
 	var wo *rocksdb.WriteOptions
@@ -268,7 +269,7 @@ func (f *FileLock) Lock() error {
 	dbOpts.SetCreateIfMissing(dirEmpty)
 	db, err = rocksdb.OpenDb(dbOpts, f.filePath)
 	errString := fmt.Sprintln(err)
-	//next if was added to pass the test TestFileLock from this package tests
+	// next if was added to pass the test TestFileLock from this package tests
 	if err != nil && errString[:38] == "IO error: lock hold by current process" {
 		return errors.Errorf("lock is already acquired on file %s", f.filePath)
 	}

@@ -108,7 +108,7 @@ func (vdb *versionedDB) BytesKeySupported() bool {
 // GetState implements method in VersionedDB interface
 func (vdb *versionedDB) GetState(namespace string, key string) (*statedb.VersionedValue, error) {
 	logger.Debugf("GetState(). ns=%s, key=%s", namespace, key)
-	//TODO: add to kvdb-common-provider
+	// TODO: add to kvdb-common-provider
 	dbVal, err := vdb.db.Get(kvdb.EncodeDataKey(namespace, key))
 	if err != nil {
 		return nil, err
@@ -116,7 +116,7 @@ func (vdb *versionedDB) GetState(namespace string, key string) (*statedb.Version
 	if dbVal == nil {
 		return nil, nil
 	}
-	//TODO: add to kvdb-common-provider
+	// TODO: add to kvdb-common-provider
 	return kvdb.DecodeValue(dbVal)
 }
 
@@ -301,14 +301,14 @@ func newKVScanner(namespace string, dbItr *rocksdbhelper.Iterator, requestedLimi
 func (scanner *kvScanner) Next() (*statedb.VersionedKV, error) {
 	logger.Debugf("kvScanner.Next()...")
 	if scanner.requestedLimit > 0 && scanner.totalRecordsReturned >= scanner.requestedLimit {
-		logger.Debugf("if-case scanner.requestedLimit=[%+v], scanner.totalRecordsReturned=[%+v]", scanner.requestedLimit, scanner.totalRecordsReturned) //TODO remove this
+		logger.Debugf("if-case scanner.requestedLimit=[%+v], scanner.totalRecordsReturned=[%+v]", scanner.requestedLimit, scanner.totalRecordsReturned) // TODO remove this
 		return nil, nil
 	}
 	if !scanner.dbItr.Valid() {
 		logger.Debugf("IF-CASE (TODO: DELETE IF NEVER HAPPENED IN TESTS) rocksdb iterator is not valid")
 		return nil, nil
 	}
-	//we have not to throw out the first iterator key.
+	// we have not to throw out the first iterator key.
 	if scanner.firstKeyPassed {
 		scanner.dbItr.Next()
 	} else {
@@ -323,13 +323,13 @@ func (scanner *kvScanner) Next() (*statedb.VersionedKV, error) {
 	dbKey := scanner.dbItr.Key()
 	dbVal := scanner.dbItr.Value()
 	dbValCopy := make([]byte, len(dbVal))
-	copy(dbValCopy, dbVal) //TODO: maybe this is not enough fast way of copying slice?
+	copy(dbValCopy, dbVal) // TODO: maybe this is not enough fast way of copying slice?
 	_, key := kvdb.DecodeDataKey(dbKey)
 	vv, err := kvdb.DecodeValue(dbValCopy)
 	logger.Debugf("after iterator.Next(): dbKey=[%s (%#v)], key=[%s], vv=[%s (%#v)], dbVal=[%s]", dbKey, dbKey, key, vv, vv, dbValCopy)
 
-	//scanner.dbItr.FreeKey()   //we have to free key & value,
-	//scanner.dbItr.FreeValue() //otherwise iterator works incorrect
+	// scanner.dbItr.FreeKey()   //we have to free key & value,
+	// scanner.dbItr.FreeValue() //otherwise iterator works incorrect
 	if err != nil {
 		return nil, err
 	}
@@ -384,7 +384,7 @@ func (scanner *kvScanner) GetBookmarkAndClose() string {
 
 type fullDBScanner struct {
 	db *rocksdbhelper.DBHandle
-	//TODO add to kv-common-provider or interface
+	// TODO add to kv-common-provider or interface
 	dbItr          *rocksdbhelper.Iterator
 	toSkip         func(namespace string) bool
 	firstKeyPassed bool
@@ -442,8 +442,8 @@ func (s *fullDBScanner) Next() (*statedb.VersionedKV, error) {
 			}, nil
 		default:
 			s.dbItr.Seek(kvdb.DataKeyStarterForNextNamespace(ns))
-			//s.dbItr.Prev() //why Prev()? because then function Next() will be called
-			s.firstKeyPassed = false //because docs says that itr.Prev() works slow
+			// s.dbItr.Prev() //why Prev()? because then function Next() will be called
+			s.firstKeyPassed = false // because docs says that itr.Prev() works slow
 		}
 	}
 	return nil, errors.Wrap(s.dbItr.Err(), "internal rocksdb error while retrieving data from db iterator")

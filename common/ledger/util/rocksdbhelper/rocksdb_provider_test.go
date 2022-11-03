@@ -214,8 +214,8 @@ func TestBatchedUpdates(t *testing.T) {
 
 func TestDrop(t *testing.T) {
 	env := newTestProviderEnv(t, testDBPath)
-	//cleanup was commented because rocksdb panics if it closes second time
-	//defer env.cleanup()
+	// cleanup was commented because rocksdb panics if it closes second time
+	// defer env.cleanup()
 	p := env.provider
 
 	db1 := p.GetDBHandle("db1")

@@ -78,10 +78,10 @@ func TestRocksDBHelper(t *testing.T) {
 	_, err = db.IsEmpty()
 	require.Error(t, err)
 
-	//this test was taken from leveldb. And this part seems unnecessary for rocksdb
-	//val3, err3 := db.Get([]byte("key3"))
-	//require.Error(t, err3)
-	//require.Equal(t, "", string(val3))
+	// this test was taken from leveldb. And this part seems unnecessary for rocksdb
+	// val3, err3 := db.Get([]byte("key3"))
+	// require.Error(t, err3)
+	// require.Equal(t, "", string(val3))
 
 	db.Open()
 	IsEmpty, err = db.IsEmpty()
