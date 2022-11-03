@@ -28,25 +28,25 @@ type DB struct {
 	db       *bolt.DB
 	dbState  dbState
 	mutex    sync.RWMutex
-	activeTx []*bolt.Tx //for active boltdb transactions
-	//readOpts        *opt.ReadOptions
-	//writeOptsNoSync *opt.WriteOptions
-	//writeOptsSync   *opt.WriteOptions
+	activeTx []*bolt.Tx // for active boltdb transactions
+	// readOpts        *opt.ReadOptions
+	// writeOptsNoSync *opt.WriteOptions
+	// writeOptsSync   *opt.WriteOptions
 }
 
 // CreateDB constructs a `DB`
 func CreateDB(conf *Conf) *DB {
-	//readOpts := &opt.ReadOptions{}
-	//writeOptsNoSync := &opt.WriteOptions{}
-	//writeOptsSync := &opt.WriteOptions{}
-	//writeOptsSync.Sync = true
+	// readOpts := &opt.ReadOptions{}
+	// writeOptsNoSync := &opt.WriteOptions{}
+	// writeOptsSync := &opt.WriteOptions{}
+	// writeOptsSync.Sync = true
 
 	return &DB{
 		conf:    conf,
 		dbState: closed,
-		//readOpts:        readOpts,
-		//writeOptsNoSync: writeOptsNoSync,
-		//writeOptsSync:   writeOptsSync,
+		// readOpts:        readOpts,
+		// writeOptsNoSync: writeOptsNoSync,
+		// writeOptsSync:   writeOptsSync,
 	}
 }
 
@@ -57,15 +57,15 @@ func (dbInst *DB) Open() {
 	if dbInst.dbState == opened {
 		return
 	}
-	//dbOpts := &opt.Options{}
+	// dbOpts := &opt.Options{}
 	dbPath := dbInst.conf.DBPath
 	var err error
 
 	if _, err := fileutil.CreateDirIfMissing(dbPath); err != nil {
 		panic(fmt.Sprintf("Error creating dir if missing: %s", err))
 	}
-	//db will be created if it doesn't exist.
-	dbInst.db, err = bolt.Open(dbPath+"/bolt.db", 0666, nil)
+	// db will be created if it doesn't exist.
+	dbInst.db, err = bolt.Open(dbPath+"/bolt.db", 0o666, nil)
 	if err != nil {
 		panic(fmt.Sprintf("Error opening boltdb: %s", err))
 	}
@@ -133,7 +133,7 @@ func (dbInst *DB) Get(key []byte) ([]byte, error) {
 	err := dbInst.db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte("fabric"))
 		v := b.Get(key)
-		var tmpv = make([]byte, len(v))
+		tmpv := make([]byte, len(v))
 		copy(tmpv, v)
 		value = tmpv
 		return nil
@@ -142,7 +142,7 @@ func (dbInst *DB) Get(key []byte) ([]byte, error) {
 		logger.Errorf("Error retrieving boltdb key [%#v]: %s", key, err)
 		return nil, errors.Wrapf(err, "error retrieving boltdb key [%#v]", key)
 	}
-	if value == nil { //likewise leveldb.ErrNotFound
+	if value == nil { // likewise leveldb.ErrNotFound
 		value = nil
 		err = nil
 	}
@@ -203,7 +203,7 @@ type IteratorHelper struct {
 // A nil startKey represents the first available key and a nil endKey represent a logical key after the last available key
 // TODO: close iterator somewhere
 func (dbInst *DB) GetIterator(startKey []byte, endKey []byte) (*bolt.Cursor, *bolt.Tx, []byte, []byte, error) {
-	//logger.Debugf("Getting new BoltDB Iterator... for start key: [%s (%+v) and end key: [%s (%+v)]", startKey, startKey, endKey, endKey)
+	// logger.Debugf("Getting new BoltDB Iterator... for start key: [%s (%+v) and end key: [%s (%+v)]", startKey, startKey, endKey, endKey)
 	dbInst.mutex.RLock()
 	defer dbInst.mutex.RUnlock()
 	tx, err := dbInst.db.Begin(false)
@@ -213,8 +213,8 @@ func (dbInst *DB) GetIterator(startKey []byte, endKey []byte) (*bolt.Cursor, *bo
 	}
 	c := tx.Bucket([]byte("fabric")).Cursor()
 	seekedKey, seekedValue := c.Seek(startKey)
-	//return dbInst.db.NewIterator(&goleveldbutil.Range{Start: startKey, Limit: endKey}, dbInst.readOpts)
-	//dbInst.activeTx = append()
+	// return dbInst.db.NewIterator(&goleveldbutil.Range{Start: startKey, Limit: endKey}, dbInst.readOpts)
+	// dbInst.activeTx = append()
 	return c, tx, seekedKey, seekedValue, nil
 }
 
@@ -222,7 +222,7 @@ func (dbInst *DB) GetIterator(startKey []byte, endKey []byte) (*bolt.Cursor, *bo
 // Because batch in boltdb is only useful when
 // several goroutines calling it.
 func (dbInst *DB) WriteBatch(tx *bolt.Tx, sync bool) error {
-	defer tx.Rollback() //it was put to the beginning to not to forgot close the tx if smth happens
+	defer tx.Rollback() // it was put to the beginning to not to forgot close the tx if smth happens
 	dbInst.mutex.RLock()
 	defer dbInst.mutex.RUnlock()
 	if !sync {
@@ -237,10 +237,10 @@ func (dbInst *DB) WriteBatch(tx *bolt.Tx, sync bool) error {
 
 func (dbInst *DB) setSyncOffOnce() {
 	dbInst.db.NoSync = false
-	//logger.Debugf("dbInst.db.NoSync = false")
+	// logger.Debugf("dbInst.db.NoSync = false")
 	defer func() {
 		dbInst.db.NoSync = true
-		//logger.Debugf("dbInst.db.NoSync = true")
+		// logger.Debugf("dbInst.db.NoSync = true")
 	}()
 }
 
@@ -269,17 +269,17 @@ func NewFileLock(filePath string) *FileLock {
 // functionality to acquire and release file lock as the boltdb
 // supports this for Windows, Solaris, and Unix.
 func (f *FileLock) Lock() error {
-	//dbOpts := &opt.Options{}
+	// dbOpts := &opt.Options{}
 	var err error
-	//var dirEmpty bool
+	// var dirEmpty bool
 	if f.IsLocked() {
 		return errors.Errorf("lock is already acquired")
 	}
 	if _, err = fileutil.CreateDirIfMissing(f.filePath); err != nil {
 		panic(fmt.Sprintf("Error creating dir if missing: %s", err))
 	}
-	//db will be created if it doesn't exist.
-	db, err := bolt.Open(f.filePath+"/lock_bolt.db", 0666, &bolt.Options{Timeout: 1 * time.Second})
+	// db will be created if it doesn't exist.
+	db, err := bolt.Open(f.filePath+"/lock_bolt.db", 0o666, &bolt.Options{Timeout: 1 * time.Second})
 	if err != nil {
 		return errors.Errorf("Error opening boltdb: %s", err)
 	}

@@ -16,7 +16,7 @@ const (
 	internalDBName = "_"
 	// maxBatchSize limits the memory usage (1MB) for a batch. It is measured by the total number of bytes
 	// of all the keys in a batch.
-	//maxBatchSize = 1000000
+	// maxBatchSize = 1000000
 )
 
 var (
@@ -201,8 +201,8 @@ func (h *DBHandle) deleteAll() error {
 	if err != nil {
 		return err
 	}
-	//iter.Seek(iter.lowerBound) // it had created a key twice
-	//iter.seekJustHappened = true
+	// iter.Seek(iter.lowerBound) // it had created a key twice
+	// iter.seekJustHappened = true
 	seekedKey, _ := iter.Cursor.Seek(iter.lowerBound)
 	iter.seekJustHappened = false // to omit 0-key in the next loop
 	tmpKey := make([]byte, len(seekedKey))
@@ -252,7 +252,7 @@ func (h *DBHandle) IsEmpty() (bool, error) {
 
 	itr.Next()
 	if itr.key == nil && itr.value == nil {
-		return !itr.Next(), nil //Next() will return false
+		return !itr.Next(), nil // Next() will return false
 	} else if bytes.Compare(itr.key, itr.upperBound) > 0 {
 		// Additional case special if only this DBHandle is empty,
 		// but others not. It is because GetIterator in BoltDB will find
@@ -293,7 +293,7 @@ func (h *DBHandle) GetIterator(startKey []byte, endKey []byte) (*Iterator, error
 		// replace the last byte 'dbNameKeySep' by 'lastKeyIndicator'
 		eKey[len(eKey)-1] = lastKeyIndicator
 	}
-	//logger.Debugf("Getting iterator for range [%#v] - [%#v]", sKey, eKey)
+	// logger.Debugf("Getting iterator for range [%#v] - [%#v]", sKey, eKey)
 	c, tx, seekedKey, seekedValue, err := h.db.GetIterator(sKey, eKey)
 	if err != nil {
 		if tx != nil {
@@ -309,7 +309,8 @@ func (h *DBHandle) GetIterator(startKey []byte, endKey []byte) (*Iterator, error
 			value:            seekedValue,
 			lowerBound:       sKey,
 			upperBound:       eKey,
-			seekJustHappened: true},
+			seekJustHappened: true,
+		},
 		nil
 }
 
@@ -374,15 +375,15 @@ type Iterator struct {
 
 // Key wraps actual leveldb iterator method
 func (itr *Iterator) Key() []byte {
-	//TODO: decide whether it is better returning just itr.key
-	var tmpKey = make([]byte, len(itr.key))
+	// TODO: decide whether it is better returning just itr.key
+	tmpKey := make([]byte, len(itr.key))
 	copy(tmpKey, itr.key)
 	return retrieveAppKey(tmpKey)
 }
 
 func (itr *Iterator) Value() []byte {
-	//TODO: decide whether it is better returning just itr.value
-	var tmpValue = make([]byte, len(itr.value))
+	// TODO: decide whether it is better returning just itr.value
+	tmpValue := make([]byte, len(itr.value))
 	copy(tmpValue, itr.value)
 	return tmpValue
 }
