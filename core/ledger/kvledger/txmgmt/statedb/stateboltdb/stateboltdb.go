@@ -108,7 +108,7 @@ func (vdb *versionedDB) BytesKeySupported() bool {
 // GetState implements method in VersionedDB interface
 func (vdb *versionedDB) GetState(namespace string, key string) (*statedb.VersionedValue, error) {
 	logger.Debugf("GetState(). ns=%s, key=%s", namespace, key)
-	//TODO: add to kvdb-common-provider
+	// TODO: add to kvdb-common-provider
 	dbVal, err := vdb.db.Get(kvdb.EncodeDataKey(namespace, key))
 	if err != nil {
 		return nil, err
@@ -116,7 +116,7 @@ func (vdb *versionedDB) GetState(namespace string, key string) (*statedb.Version
 	if dbVal == nil {
 		return nil, nil
 	}
-	//TODO: add to kvdb-common-provider
+	// TODO: add to kvdb-common-provider
 	return kvdb.DecodeValue(dbVal)
 }
 
@@ -278,7 +278,7 @@ func (vdb *versionedDB) importState(itr statedb.FullScanIterator, savepoint *ver
 			return err
 		}
 		if versionedKV == nil {
-			itr.Close() //TODO: it might be excess
+			itr.Close() // TODO: it might be excess
 			break
 		}
 		dbKey := kvdb.EncodeDataKey(versionedKV.Namespace, versionedKV.Key)
@@ -286,7 +286,7 @@ func (vdb *versionedDB) importState(itr statedb.FullScanIterator, savepoint *ver
 		if err != nil {
 			return err
 		}
-		//batchSize += len(dbKey) + len(dbValue)
+		// batchSize += len(dbKey) + len(dbValue)
 		dbBatch.Put(dbKey, dbValue)
 		/*if batchSize >= maxDataImportBatchSize {
 			if err := vdb.db.WriteBatch(dbBatch, true); err != nil {
@@ -320,7 +320,7 @@ func newKVScanner(namespace string, dbItr *boltdbhelper.Iterator, requestedLimit
 func (scanner *kvScanner) Next() (*statedb.VersionedKV, error) {
 	logger.Debugf("kvScanner.Next()...")
 	if scanner.requestedLimit > 0 && scanner.totalRecordsReturned >= scanner.requestedLimit {
-		logger.Debugf("if-case scanner.requestedLimit=[%+v], scanner.totalRecordsReturned=[%+v]", scanner.requestedLimit, scanner.totalRecordsReturned) //TODO remove this
+		logger.Debugf("if-case scanner.requestedLimit=[%+v], scanner.totalRecordsReturned=[%+v]", scanner.requestedLimit, scanner.totalRecordsReturned) // TODO remove this
 		return nil, nil
 	}
 	if !scanner.dbItr.Valid() {
@@ -336,13 +336,13 @@ func (scanner *kvScanner) Next() (*statedb.VersionedKV, error) {
 	dbKey := scanner.dbItr.Key()
 	dbVal := scanner.dbItr.Value()
 	dbValCopy := make([]byte, len(dbVal))
-	copy(dbValCopy, dbVal) //TODO: maybe this is not enough fast way of copying slice?
+	copy(dbValCopy, dbVal) // TODO: maybe this is not enough fast way of copying slice?
 	_, key := kvdb.DecodeDataKey(dbKey)
 	vv, err := kvdb.DecodeValue(dbValCopy)
 	logger.Debugf("after iterator.Next(): dbKey=[%s (%#v)], key=[%s], vv=[%s (%#v)], dbVal=[%s]", dbKey, dbKey, key, vv, vv, dbValCopy)
 
-	//scanner.dbItr.FreeKey()   //we have to free key & value,
-	//scanner.dbItr.FreeValue() //otherwise iterator works incorrect
+	// scanner.dbItr.FreeKey()   //we have to free key & value,
+	// scanner.dbItr.FreeValue() //otherwise iterator works incorrect
 	if err != nil {
 		return nil, err
 	}
@@ -379,7 +379,7 @@ func (scanner *kvScanner) GetBookmarkAndClose() string {
 
 type fullDBScanner struct {
 	db *boltdbhelper.DBHandle
-	//TODO add to kv-common-provider or interface
+	// TODO add to kv-common-provider or interface
 	dbItr  *boltdbhelper.Iterator
 	toSkip func(namespace string) bool
 	closed bool

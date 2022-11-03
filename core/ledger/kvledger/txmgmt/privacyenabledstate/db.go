@@ -68,12 +68,12 @@ func NewDBProvider(
 			return nil, err
 		}
 	} else if stateDBConf != nil && stateDBConf.StateDatabase == ledger.BboltDB {
-		logger.Debugf("creating bbolt statedb provider...") //TODO: delete this
+		logger.Debugf("creating bbolt statedb provider...") // TODO: delete this
 		if vdbProvider, err = stateboltdb.NewVersionedDBProvider(stateDBConf.LevelDBPath); err != nil {
 			return nil, err
 		}
 	} else {
-		logger.Debugf("creating leveldb statedb provider...") //TODO: delete this
+		logger.Debugf("creating leveldb statedb provider...") // TODO: delete this
 		if vdbProvider, err = stateleveldb.NewVersionedDBProvider(stateDBConf.LevelDBPath); err != nil {
 			return nil, err
 		}

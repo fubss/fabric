@@ -141,8 +141,8 @@ func TestFileLock(t *testing.T) {
 	// boltdb sets lock when db is Open() and
 	// another Open() will wait when db file
 	// will be unlocked until timeout
-	//expectedErr := fmt.Sprintf("lock is already acquired on file %s", fileLockPath)
-	//require.EqualError(t, err, expectedErr)
+	// expectedErr := fmt.Sprintf("lock is already acquired on file %s", fileLockPath)
+	// require.EqualError(t, err, expectedErr)
 	require.Error(t, err)
 	require.Nil(t, fileLock2.db)
 
@@ -228,7 +228,7 @@ func TestCreateDBInNonEmptyDir(t *testing.T) {
 
 func BenchmarkBoltDBHelper(b *testing.B) {
 	b.Run("get-boltdb-little-data", BenchmarkGetBoltDBWithLittleData)
-	//b.Run("get-boltdb-big-data", BenchmarkGetBoltDBWithBigData)
+	// b.Run("get-boltdb-big-data", BenchmarkGetBoltDBWithBigData)
 	b.Run("put-boltdb", BenchmarkPutBoltDB)
 	b.Run("put-boltdb-type-2", BenchmarkPutBoltDB2)
 }
@@ -251,7 +251,6 @@ func BenchmarkGetBoltDBWithLittleData(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		_, _ = db.Get(keys[i%500])
 	}
-
 }
 
 func BenchmarkGetBoltDBWithBigData(b *testing.B) {
@@ -260,7 +259,6 @@ func BenchmarkGetBoltDBWithBigData(b *testing.B) {
 	keysToGetApproxAmount := 500
 	for i := 0; i < keysTotalAmount; i++ {
 		_ = db.Put([]byte(createTestKey(i)), []byte(createTestValue("testdb", i)), true)
-
 	}
 	randSource := rand.NewSource(time.Now().UnixNano())
 	r := rand.New(randSource)
@@ -272,7 +270,6 @@ func BenchmarkGetBoltDBWithBigData(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		_, _ = db.Get(keysToGet[i%keysToGetApproxAmount])
 	}
-
 }
 
 func BenchmarkPutBoltDB(b *testing.B) {
