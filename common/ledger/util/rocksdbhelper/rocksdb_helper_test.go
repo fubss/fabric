@@ -44,7 +44,7 @@ func TestRocksDBHelperReadWithoutOpen(t *testing.T) {
 
 func TestRocksDBHelper(t *testing.T) {
 	env := newTestDBEnv(t, testDBPath)
-	// defer env.cleanup()
+	defer env.cleanup()
 	db := env.db
 
 	db.Open()
@@ -213,11 +213,11 @@ func TestCreateDBInNonEmptyDir(t *testing.T) {
 	require.NoError(t, err, "")
 	file.Close()
 	db := CreateDB(&Conf{DBPath: testDBPath})
-	defer db.Close()
 	defer func() {
 		if r := recover(); r == nil {
 			t.Fatalf("A panic is expected when opening db in an existing non-empty dir. %s", r)
 		}
 	}()
 	db.Open()
+	defer db.Close()
 }
