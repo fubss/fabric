@@ -113,8 +113,8 @@ func (dbInst *DB) Close() {
 // Get returns the value for the given key
 func (dbInst *DB) Get(key []byte) ([]byte, error) {
 	logger.Debugf("Getting key [%s] from RocksDB...", key)
-	dbInst.mutex.RLock()
-	defer dbInst.mutex.RUnlock()
+	//dbInst.mutex.RLock()
+	//defer dbInst.mutex.RUnlock()
 	//TODO: delete commened code below, if we never have to uncomment it
 	/*if dbInst.dbState == closed {
 		logger.Errorf("Error retrieving rocksdb key [%#v]: rocksdb is closed", key)
@@ -138,8 +138,8 @@ func (dbInst *DB) Get(key []byte) ([]byte, error) {
 
 // Put saves the key/value
 func (dbInst *DB) Put(key []byte, value []byte, sync bool) error {
-	dbInst.mutex.RLock()
-	defer dbInst.mutex.RUnlock()
+	// dbInst.mutex.RLock()
+	// defer dbInst.mutex.RUnlock()
 	var wo *rocksdb.WriteOptions
 	if sync {
 		wo = dbInst.writeOptsSync
@@ -156,8 +156,8 @@ func (dbInst *DB) Put(key []byte, value []byte, sync bool) error {
 
 // Delete deletes the given key
 func (dbInst *DB) Delete(key []byte, sync bool) error {
-	dbInst.mutex.RLock()
-	defer dbInst.mutex.RUnlock()
+	// dbInst.mutex.RLock()
+	// defer dbInst.mutex.RUnlock()
 	var wo *rocksdb.WriteOptions
 	if sync {
 		wo = dbInst.writeOptsSync
@@ -216,8 +216,8 @@ func (dbInst *DB) GetIterator(startKey []byte, endKey []byte) (*IteratorHelper, 
 // WriteBatch writes a batch
 func (dbInst *DB) WriteBatch(batch *rocksdb.WriteBatch, sync bool) error {
 	logger.Debugf("WritingBatch.Count()=[%d]", batch.Count()) // TODO: delete this
-	dbInst.mutex.RLock()
-	defer dbInst.mutex.RUnlock()
+	// dbInst.mutex.RLock()
+	// defer dbInst.mutex.RUnlock()
 	var wo *rocksdb.WriteOptions
 	if sync {
 		wo = dbInst.writeOptsSync
