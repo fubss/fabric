@@ -52,7 +52,8 @@ func CreateDB(conf *Conf) *DB {
 
 // Open opens the underlying db
 func (dbInst *DB) Open() {
-
+	dbInst.mutex.Lock()
+	defer dbInst.mutex.Unlock()
 	if dbInst.dbState == opened {
 		return
 	}
@@ -110,6 +111,8 @@ func (dbInst *DB) IsEmpty() (bool, error) {
 
 // Close closes the underlying db
 func (dbInst *DB) Close() {
+	dbInst.mutex.Lock()
+	defer dbInst.mutex.Unlock()
 	if dbInst.dbState == closed {
 		return
 	}
