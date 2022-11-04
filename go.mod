@@ -46,7 +46,7 @@ require (
 )
 
 require (
-	github.com/linxGnu/grocksdb v1.7.10
+	github.com/linxGnu/grocksdb v1.6.45
 	google.golang.org/protobuf v1.27.1
 )
 
@@ -114,5 +114,3 @@ require (
 )
 
 replace github.com/cespare/xxhash/v2 => github.com/cespare/xxhash/v2 v2.1.2 // fix for Go 1.17 in github.com/prometheus/client_golang dependency without updating protobuf
-
-replace github.com/linxGnu/grocksdb => github.com/linxGnu/grocksdb v1.6.45

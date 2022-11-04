@@ -14,7 +14,7 @@ RUN echo 'hosts: files dns' > /etc/nsswitch.conf
 
 #FROM golang:${GO_VER}-alpine${ALPINE_VER} as golang
 FROM fubss/rocksdb:6.27.3-golang${GO_VER}-alpine${ALPINE_VER} as golang-rocksdb
-RUN apk add alpine-keys=2.4.0-r0
+#RUN apk add alpine-keys=2.4.0-r0
 RUN apk upgrade
 RUN apk add -X https://dl-cdn.alpinelinux.org/alpine/v3.16/main -u alpine-keys
 RUN apk add --no-cache \
