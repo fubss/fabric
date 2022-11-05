@@ -21,7 +21,7 @@ WORKDIR $GOPATH/src/github.com/hyperledger/fabric
 
 FROM golang-rocksdb as tools
 ARG GO_TAGS
-RUN CGO_ENABLED=0 make tools GO_TAGS=${GO_TAGS}
+RUN CGO_ENABLED=1 make tools GO_TAGS=${GO_TAGS}
 
 FROM golang:${GO_VER}-alpine${ALPINE_VER}
 #RUN apk add alpine-keys=2.4.0-r0
