@@ -4,8 +4,9 @@ Copyright IBM Corp. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package stateleveldb
+package statebadgerdb
 
+/*
 import (
 	"fmt"
 	"testing"
@@ -45,9 +46,10 @@ func TestEncodeDecodeVersionedValues(t *testing.T) {
 }
 
 func testEncodeDecodeVersionedValues(t *testing.T, v *statedb.VersionedValue) {
-	encodedVal, err := EncodeValue(v)
+	encodedVal, err := encodeValue(v)
 	require.NoError(t, err)
-	decodedVal, err := DecodeValue(encodedVal)
+	decodedVal, err := decodeValue(encodedVal)
 	require.NoError(t, err)
 	require.Equal(t, v, decodedVal)
 }
+*/

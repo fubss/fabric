@@ -4,21 +4,19 @@ Copyright IBM Corp. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package stateleveldb
+package statebadgerdb
 
 import (
-	"bytes"
-
 	"github.com/hyperledger/fabric/common/flogging"
 	"github.com/hyperledger/fabric/common/ledger/dataformat"
-	"github.com/hyperledger/fabric/common/ledger/util/leveldbhelper"
+	"github.com/hyperledger/fabric/common/ledger/util/badgerdbhelper"
 	"github.com/hyperledger/fabric/core/ledger/internal/version"
 	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/statedb"
+	kvdb "github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/statedb/stateleveldb"
 	"github.com/pkg/errors"
-	"github.com/syndtr/goleveldb/leveldb/iterator"
 )
 
-var logger = flogging.MustGetLogger("stateleveldb")
+var logger = flogging.MustGetLogger("statebadgerdb")
 
 var (
 	dataKeyPrefix          = []byte{'d'}
@@ -31,14 +29,14 @@ var (
 
 // VersionedDBProvider implements interface VersionedDBProvider
 type VersionedDBProvider struct {
-	dbProvider *leveldbhelper.Provider
+	dbProvider *badgerdbhelper.Provider
 }
 
 // NewVersionedDBProvider instantiates VersionedDBProvider
 func NewVersionedDBProvider(dbPath string) (*VersionedDBProvider, error) {
 	logger.Debugf("constructing VersionedDBProvider dbPath=%s", dbPath)
-	dbProvider, err := leveldbhelper.NewProvider(
-		&leveldbhelper.Conf{
+	dbProvider, err := badgerdbhelper.NewProvider(
+		&badgerdbhelper.Conf{
 			DBPath:         dbPath,
 			ExpectedFormat: dataformat.CurrentFormat,
 		})
@@ -81,12 +79,12 @@ func (provider *VersionedDBProvider) Drop(dbName string) error {
 
 // VersionedDB implements VersionedDB interface
 type versionedDB struct {
-	db     *leveldbhelper.DBHandle
+	db     *badgerdbhelper.DBHandle
 	dbName string
 }
 
 // newVersionedDB constructs an instance of VersionedDB
-func newVersionedDB(db *leveldbhelper.DBHandle, dbName string) *versionedDB {
+func newVersionedDB(db *badgerdbhelper.DBHandle, dbName string) *versionedDB {
 	return &versionedDB{db, dbName}
 }
 
@@ -114,14 +112,14 @@ func (vdb *versionedDB) BytesKeySupported() bool {
 // GetState implements method in VersionedDB interface
 func (vdb *versionedDB) GetState(namespace string, key string) (*statedb.VersionedValue, error) {
 	logger.Debugf("GetState(). ns=%s, key=%s", namespace, key)
-	dbVal, err := vdb.db.Get(EncodeDataKey(namespace, key))
+	dbVal, err := vdb.db.Get(kvdb.EncodeDataKey(namespace, key))
 	if err != nil {
 		return nil, err
 	}
 	if dbVal == nil {
 		return nil, nil
 	}
-	return DecodeValue(dbVal)
+	return kvdb.DecodeValue(dbVal)
 }
 
 // GetVersion implements method in VersionedDB interface
@@ -159,10 +157,13 @@ func (vdb *versionedDB) GetStateRangeScanIterator(namespace string, startKey str
 
 // GetStateRangeScanIteratorWithPagination implements method in VersionedDB interface
 func (vdb *versionedDB) GetStateRangeScanIteratorWithPagination(namespace string, startKey string, endKey string, pageSize int32) (statedb.QueryResultsIterator, error) {
-	dataStartKey := EncodeDataKey(namespace, startKey)
-	dataEndKey := EncodeDataKey(namespace, endKey)
+	dataStartKey := kvdb.EncodeDataKey(namespace, startKey)
+	dataEndKey := kvdb.EncodeDataKey(namespace, endKey)
 	if endKey == "" {
 		dataEndKey[len(dataEndKey)-1] = lastKeyIndicator
+	} else {
+		logger.Debugf("endKey is not empty")
+		dataEndKey = kvdb.EncodeDataKey(namespace, endKey)
 	}
 	dbItr, err := vdb.db.GetIterator(dataStartKey, dataEndKey)
 	if err != nil {
@@ -173,12 +174,12 @@ func (vdb *versionedDB) GetStateRangeScanIteratorWithPagination(namespace string
 
 // ExecuteQuery implements method in VersionedDB interface
 func (vdb *versionedDB) ExecuteQuery(namespace, query string) (statedb.ResultsIterator, error) {
-	return nil, errors.New("ExecuteQuery not supported for leveldb")
+	return nil, errors.New("ExecuteQuery not supported for badgerdb")
 }
 
 // ExecuteQueryWithPagination implements method in VersionedDB interface
 func (vdb *versionedDB) ExecuteQueryWithPagination(namespace, query, bookmark string, pageSize int32) (statedb.QueryResultsIterator, error) {
-	return nil, errors.New("ExecuteQueryWithMetadata not supported for leveldb")
+	return nil, errors.New("ExecuteQueryWithMetadata not supported for badgerdb")
 }
 
 // ApplyUpdates implements method in VersionedDB interface
@@ -188,13 +189,13 @@ func (vdb *versionedDB) ApplyUpdates(batch *statedb.UpdateBatch, height *version
 	for _, ns := range namespaces {
 		updates := batch.GetUpdates(ns)
 		for k, vv := range updates {
-			dataKey := EncodeDataKey(ns, k)
+			dataKey := kvdb.EncodeDataKey(ns, k)
 			logger.Debugf("Channel [%s]: Applying key(string)=[%s] key(bytes)=[%#v]", vdb.dbName, string(dataKey), dataKey)
 
 			if vv.Value == nil {
 				dbBatch.Delete(dataKey)
 			} else {
-				encodedVal, err := EncodeValue(vv)
+				encodedVal, err := kvdb.EncodeValue(vv)
 				if err != nil {
 					return err
 				}
@@ -246,7 +247,15 @@ func (vdb *versionedDB) importState(itr statedb.FullScanIterator, savepoint *ver
 		return vdb.db.Put(savePointKey, savepoint.ToBytes(), true)
 	}
 	dbBatch := vdb.db.NewUpdateBatch()
+	defer dbBatch.Cancel()
+	if err := vdb.db.WriteBatch(dbBatch, true); err != nil {
+		return err
+	}
+	dbBatch = vdb.db.NewUpdateBatch()
+	//numKeys := 0
 	batchSize := 0
+	//maxBatchSize := int(vdb.db.GetMaxBatchSize())
+	//maxBatchCount := int(vdb.db.GetMaxBatchCount())
 	for {
 		versionedKV, err := itr.Next()
 		if err != nil {
@@ -255,19 +264,22 @@ func (vdb *versionedDB) importState(itr statedb.FullScanIterator, savepoint *ver
 		if versionedKV == nil {
 			break
 		}
-		dbKey := EncodeDataKey(versionedKV.Namespace, versionedKV.Key)
-		dbValue, err := EncodeValue(versionedKV.VersionedValue)
+		dbKey := kvdb.EncodeDataKey(versionedKV.Namespace, versionedKV.Key)
+		dbValue, err := kvdb.EncodeValue(versionedKV.VersionedValue)
 		if err != nil {
 			return err
 		}
 		batchSize += len(dbKey) + len(dbValue)
+		//numKeys++
 		dbBatch.Put(dbKey, dbValue)
 		if batchSize >= maxDataImportBatchSize {
 			if err := vdb.db.WriteBatch(dbBatch, true); err != nil {
 				return err
 			}
 			batchSize = 0
-			dbBatch.Reset()
+			//numKeys = 0
+			dbBatch.Cancel()
+			dbBatch = vdb.db.NewUpdateBatch()
 		}
 	}
 	dbBatch.Put(savePointKey, savepoint.ToBytes())
@@ -279,30 +291,34 @@ func (vdb *versionedDB) IsEmpty() (bool, error) {
 	return vdb.db.IsEmpty()
 }
 
-func EncodeDataKey(ns, key string) []byte {
+/*
+func encodeDataKey(ns, key string) []byte {
 	k := append(dataKeyPrefix, []byte(ns)...)
 	k = append(k, nsKeySep...)
 	return append(k, []byte(key)...)
 }
 
-func DecodeDataKey(encodedDataKey []byte) (string, string) {
+func decodeDataKey(encodedDataKey []byte) (string, string) {
 	split := bytes.SplitN(encodedDataKey, nsKeySep, 2)
+	if len(split) <= 1 {
+		return "", ""
+	}
 	return string(split[0][1:]), string(split[1])
 }
 
-func DataKeyStarterForNextNamespace(ns string) []byte {
+func dataKeyStarterForNextNamespace(ns string) []byte {
 	k := append(dataKeyPrefix, []byte(ns)...)
 	return append(k, lastKeyIndicator)
 }
-
+*/
 type kvScanner struct {
 	namespace            string
-	dbItr                iterator.Iterator
+	dbItr                *badgerdbhelper.Iterator
 	requestedLimit       int32
 	totalRecordsReturned int32
 }
 
-func newKVScanner(namespace string, dbItr iterator.Iterator, requestedLimit int32) *kvScanner {
+func newKVScanner(namespace string, dbItr *badgerdbhelper.Iterator, requestedLimit int32) *kvScanner {
 	return &kvScanner{namespace, dbItr, requestedLimit, 0}
 }
 
@@ -318,8 +334,8 @@ func (scanner *kvScanner) Next() (*statedb.VersionedKV, error) {
 	dbVal := scanner.dbItr.Value()
 	dbValCopy := make([]byte, len(dbVal))
 	copy(dbValCopy, dbVal)
-	_, key := DecodeDataKey(dbKey)
-	vv, err := DecodeValue(dbValCopy)
+	_, key := kvdb.DecodeDataKey(dbKey)
+	vv, err := kvdb.DecodeValue(dbValCopy)
 	if err != nil {
 		return nil, err
 	}
@@ -342,7 +358,7 @@ func (scanner *kvScanner) GetBookmarkAndClose() string {
 	retval := ""
 	if scanner.dbItr.Next() {
 		dbKey := scanner.dbItr.Key()
-		_, key := DecodeDataKey(dbKey)
+		_, key := kvdb.DecodeDataKey(dbKey)
 		retval = key
 	}
 	scanner.Close()
@@ -350,33 +366,39 @@ func (scanner *kvScanner) GetBookmarkAndClose() string {
 }
 
 type fullDBScanner struct {
-	db     *leveldbhelper.DBHandle
-	dbItr  iterator.Iterator
-	toSkip func(namespace string) bool
+	db       *badgerdbhelper.DBHandle
+	dbItr    *badgerdbhelper.Iterator
+	toSkip   func(namespace string) bool
+	isClosed bool
 }
 
-func newFullDBScanner(db *leveldbhelper.DBHandle, skipNamespace func(namespace string) bool) (*fullDBScanner, error) {
+func newFullDBScanner(db *badgerdbhelper.DBHandle, skipNamespace func(namespace string) bool) (*fullDBScanner, error) {
 	dbItr, err := db.GetIterator(dataKeyPrefix, dataKeyStopper)
 	if err != nil {
 		return nil, err
 	}
 	return &fullDBScanner{
-			db:     db,
-			dbItr:  dbItr,
-			toSkip: skipNamespace,
+			db:       db,
+			dbItr:    dbItr,
+			toSkip:   skipNamespace,
+			isClosed: false,
 		},
 		nil
 }
 
 // Next returns the key-values in the lexical order of <Namespace, key>
 func (s *fullDBScanner) Next() (*statedb.VersionedKV, error) {
+	if s.isClosed {
+		return nil, errors.Errorf("internal badgerdb error while retrieving data from db iterator")
+	}
 	for s.dbItr.Next() {
-		ns, key := DecodeDataKey(s.dbItr.Key())
+		ns, key := kvdb.DecodeDataKey(s.dbItr.Key())
 		compositeKey := &statedb.CompositeKey{
 			Namespace: ns,
 			Key:       key,
 		}
-		versionedVal, err := DecodeValue(s.dbItr.Value())
+
+		versionedVal, err := kvdb.DecodeValue(s.dbItr.Value())
 		if err != nil {
 			return nil, err
 		}
@@ -388,16 +410,17 @@ func (s *fullDBScanner) Next() (*statedb.VersionedKV, error) {
 				VersionedValue: versionedVal,
 			}, nil
 		default:
-			s.dbItr.Seek(DataKeyStarterForNextNamespace(ns))
-			s.dbItr.Prev()
+			s.dbItr.Seek(kvdb.DataKeyStarterForNextNamespace(ns))
+			s.dbItr.IgnoreNext = true
 		}
 	}
-	return nil, errors.Wrap(s.dbItr.Error(), "internal leveldb error while retrieving data from db iterator")
+	return nil, nil
 }
 
 func (s *fullDBScanner) Close() {
 	if s == nil {
 		return
 	}
+	s.isClosed = true
 	s.dbItr.Release()
 }

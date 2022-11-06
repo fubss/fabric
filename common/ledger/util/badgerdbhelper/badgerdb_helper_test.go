@@ -4,7 +4,7 @@ Copyright IBM Corp. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package leveldbhelper
+package badgerdbhelper
 
 import (
 	"fmt"
@@ -16,10 +16,9 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"github.com/syndtr/goleveldb/leveldb"
 )
 
-func TestLevelDBHelperWriteWithoutOpen(t *testing.T) {
+func TestBadgerDBHelperWriteWithoutOpen(t *testing.T) {
 	env := newTestDBEnv(t, testDBPath)
 	defer env.cleanup()
 	db := env.db
@@ -28,10 +27,10 @@ func TestLevelDBHelperWriteWithoutOpen(t *testing.T) {
 			t.Fatalf("A panic is expected when writing to db before opening")
 		}
 	}()
-	require.NoError(t, db.Put([]byte("key"), []byte("value"), false))
+	db.Put([]byte("key"), []byte("value"), false)
 }
 
-func TestLevelDBHelperReadWithoutOpen(t *testing.T) {
+func TestBadgerDBHelperReadWithoutOpen(t *testing.T) {
 	env := newTestDBEnv(t, testDBPath)
 	defer env.cleanup()
 	db := env.db
@@ -40,11 +39,10 @@ func TestLevelDBHelperReadWithoutOpen(t *testing.T) {
 			t.Fatalf("A panic is expected when writing to db before opening")
 		}
 	}()
-	_, err := db.Get([]byte("key"))
-	require.NoError(t, err)
+	db.Get([]byte("key"))
 }
 
-func TestLevelDBHelper(t *testing.T) {
+func TestBadgerDBHelper(t *testing.T) {
 	env := newTestDBEnv(t, testDBPath)
 	// defer env.cleanup()
 	db := env.db
@@ -55,15 +53,15 @@ func TestLevelDBHelper(t *testing.T) {
 	IsEmpty, err := db.IsEmpty()
 	require.NoError(t, err)
 	require.True(t, IsEmpty)
-	require.NoError(t, db.Put([]byte("key1"), []byte("value1"), false))
-	require.NoError(t, db.Put([]byte("key2"), []byte("value2"), true))
-	require.NoError(t, db.Put([]byte("key3"), []byte("value3"), true))
+	db.Put([]byte("key1"), []byte("value1"), false)
+	db.Put([]byte("key2"), []byte("value2"), true)
+	db.Put([]byte("key3"), []byte("value3"), true)
 
 	val, _ := db.Get([]byte("key2"))
 	require.Equal(t, "value2", string(val))
 
-	require.NoError(t, db.Delete([]byte("key1"), false))
-	require.NoError(t, db.Delete([]byte("key2"), true))
+	db.Delete([]byte("key1"), false)
+	db.Delete([]byte("key2"), true)
 
 	val1, err1 := db.Get([]byte("key1"))
 	require.NoError(t, err1, "")
@@ -89,11 +87,11 @@ func TestLevelDBHelper(t *testing.T) {
 	require.NoError(t, err)
 	require.False(t, IsEmpty)
 
-	batch := &leveldb.Batch{}
-	batch.Put([]byte("key1"), []byte("value1"))
-	batch.Put([]byte("key2"), []byte("value2"))
+	batch := db.db.NewWriteBatch()
+	batch.Set([]byte("key1"), []byte("value1"))
+	batch.Set([]byte("key2"), []byte("value2"))
 	batch.Delete([]byte("key3"))
-	require.NoError(t, db.WriteBatch(batch, true))
+	db.WriteBatch(batch, true)
 
 	val1, err1 = db.Get([]byte("key1"))
 	require.NoError(t, err1, "")
@@ -109,7 +107,7 @@ func TestLevelDBHelper(t *testing.T) {
 
 	keys := []string{}
 	itr := db.GetIterator(nil, nil)
-	for itr.Next() {
+	for itr.iterator.Rewind(); itr.iterator.Valid(); itr.iterator.Next() {
 		keys = append(keys, string(itr.Key()))
 	}
 	require.Equal(t, []string{"key1", "key2"}, keys)
@@ -216,14 +214,15 @@ func TestCreateDBInNonEmptyDir(t *testing.T) {
 	}()
 	db.Open()
 }
-func BenchmarkLevelDBHelper(b *testing.B) {
-	b.Run("get-leveldb-little-data", BenchmarkGetLevelDBWithLittleData)
-	//b.Run("get-leveldb-big-data", BenchmarkGetLevelDBWithBigData)
-	b.Run("put-leveldb", BenchmarkPutLevelDB)
-	b.Run("put-leveldb-type-2", BenchmarkPutLevelDB2)
+
+func BenchmarkBadgerDBHelper(b *testing.B) {
+	b.Run("get-badgerdb-little-data", BenchmarkGetBadgerDBWithLittleData)
+	//b.Run("get-badgerdb-big-data", BenchmarkGetBadgerDBWithBigData)
+	b.Run("put-badgerdb", BenchmarkPutBadgerDB)
+	b.Run("put-badgerdb-type-2", BenchmarkPutBadgerDB2)
 }
 
-func BenchmarkGetLevelDBWithLittleData(b *testing.B) {
+func BenchmarkGetBadgerDBWithLittleData(b *testing.B) {
 	db := createAndOpenDB()
 	db.Put([]byte("key1"), []byte("value1"), true)
 	db.Put([]byte("key2"), []byte("value2"), true)
@@ -244,7 +243,7 @@ func BenchmarkGetLevelDBWithLittleData(b *testing.B) {
 
 }
 
-func BenchmarkGetLevelDBWithBigData(b *testing.B) {
+func BenchmarkGetBadgerDBWithBigData(b *testing.B) {
 	db := createAndOpenDB()
 	keysTotalAmount := 1000
 	keysToGetApproxAmount := 500
@@ -265,7 +264,7 @@ func BenchmarkGetLevelDBWithBigData(b *testing.B) {
 
 }
 
-func BenchmarkPutLevelDB(b *testing.B) {
+func BenchmarkPutBadgerDB(b *testing.B) {
 	db := createAndOpenDB()
 	keysAmount := 100000
 	keys := make([][]byte, 0, keysAmount)
@@ -278,11 +277,11 @@ func BenchmarkPutLevelDB(b *testing.B) {
 	}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_ = db.Put(keys[i], values[i], true)
+		_ = db.Put(keys[i%keysAmount], values[i%keysAmount], true)
 	}
 }
 
-func BenchmarkPutLevelDB2(b *testing.B) {
+func BenchmarkPutBadgerDB2(b *testing.B) {
 	db := createAndOpenDB()
 	var key []byte
 	var value []byte
@@ -297,7 +296,7 @@ func BenchmarkPutLevelDB2(b *testing.B) {
 }
 
 func createAndOpenDB() *DB {
-	dbPath, _ := ioutil.TempDir("", "stateleveldb")
+	dbPath, _ := ioutil.TempDir("", "badgerdb")
 	defer os.RemoveAll(dbPath)
 	db := CreateDB(&Conf{
 		DBPath:         dbPath,

@@ -19,6 +19,7 @@ import (
 	"github.com/hyperledger/fabric/core/ledger/internal/version"
 	"github.com/hyperledger/fabric/core/ledger/kvledger/bookkeeping"
 	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/statedb"
+	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/statedb/statebadgerdb"
 	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/statedb/statecouchdb"
 	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/statedb/stateleveldb"
 	"github.com/hyperledger/fabric/core/ledger/util"
@@ -40,7 +41,7 @@ type StateDBConfig struct {
 	// LevelDBPath is the filesystem path when statedb type is "goleveldb".
 	// It is internally computed by the ledger component,
 	// so it is not in ledger.StateDBConfig and not exposed to other components.
-	LevelDBPath string
+	StateDBPath string
 }
 
 // DBProvider encapsulates other providers such as VersionedDBProvider and
@@ -66,8 +67,13 @@ func NewDBProvider(
 		if vdbProvider, err = statecouchdb.NewVersionedDBProvider(stateDBConf.CouchDB, metricsProvider, sysNamespaces); err != nil {
 			return nil, err
 		}
+	} else if stateDBConf != nil && stateDBConf.StateDatabase == ledger.Badger {
+		logger.Debugf("creating grocksdb statedb provider...") //TODO: delete this
+		if vdbProvider, err = statebadgerdb.NewVersionedDBProvider(stateDBConf.StateDBPath); err != nil {
+			return nil, err
+		}
 	} else {
-		if vdbProvider, err = stateleveldb.NewVersionedDBProvider(stateDBConf.LevelDBPath); err != nil {
+		if vdbProvider, err = stateleveldb.NewVersionedDBProvider(stateDBConf.StateDBPath); err != nil {
 			return nil, err
 		}
 	}
