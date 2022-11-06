@@ -37,24 +37,24 @@ type DB struct {
 	dbState dbState
 	mutex   sync.RWMutex
 
-	//readOpts        *opt.ReadOptions
-	//writeOptsNoSync *opt.WriteOptions
-	//writeOptsSync   *opt.WriteOptions
+	// readOpts        *opt.ReadOptions
+	// writeOptsNoSync *opt.WriteOptions
+	// writeOptsSync   *opt.WriteOptions
 }
 
 // CreateDB constructs a `DB`
 func CreateDB(conf *Conf) *DB {
-	//readOpts := &opt.ReadOptions{}
-	//writeOptsNoSync := &opt.WriteOptions{}
-	//writeOptsSync := &opt.WriteOptions{}
-	//writeOptsSync.Sync = true
+	// readOpts := &opt.ReadOptions{}
+	// writeOptsNoSync := &opt.WriteOptions{}
+	// writeOptsSync := &opt.WriteOptions{}
+	// writeOptsSync.Sync = true
 
 	return &DB{
 		conf:    conf,
 		dbState: closed,
-		//readOpts:        readOpts,
-		//writeOptsNoSync: writeOptsNoSync,
-		//writeOptsSync:   writeOptsSync,
+		// readOpts:        readOpts,
+		// writeOptsNoSync: writeOptsNoSync,
+		// writeOptsSync:   writeOptsSync,
 	}
 }
 
@@ -270,7 +270,7 @@ func NewFileLock(filePath string) *FileLock {
 // functionality to acquire and release file lock as the leveldb
 // supports this for Windows, Solaris, and Unix.
 func (f *FileLock) Lock() error {
-	//dbOpts := &opt.Options{}
+	// dbOpts := &opt.Options{}
 	var err error
 	var dirEmpty bool
 	if dirEmpty, err = fileutil.CreateDirIfMissing(f.filePath); err != nil {

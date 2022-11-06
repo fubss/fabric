@@ -138,7 +138,7 @@ func TestIterator(t *testing.T) {
 		require.True(t, itr.First())
 		require.True(t, itr.Seek([]byte(createTestKey(10))))
 		require.Equal(t, []byte(createTestKey(10)), itr.Key())
-		//require.True(t, itr.Prev()) // There is no function Prev in Badger. So I use Seek to return to previous key
+		// require.True(t, itr.Prev()) // There is no function Prev in Badger. So I use Seek to return to previous key
 		require.True(t, itr.Seek([]byte(createTestKey(9))))
 		checkItrResults(t, itr, createTestKeys(10, 19), createTestValues("db1", 10, 19)) //
 
@@ -148,12 +148,12 @@ func TestIterator(t *testing.T) {
 		checkItrResults(t, itr, createTestKeys(1, 19), createTestValues("db1", 1, 19))
 
 		require.True(t, itr.First())
-		//require.False(t, itr.Prev()) // There is no function Prev in Badger.
+		// require.False(t, itr.Prev()) // There is no function Prev in Badger.
 		checkItrResults(t, itr, createTestKeys(1, 19), createTestValues("db1", 1, 19)) // Changed because Prev is not used
 
-		//require.True(t, itr.First())
-		//require.True(t, itr.Last()) // There is no function Last in Badger.
-		//checkItrResults(t, itr, nil, nil)
+		// require.True(t, itr.First())
+		// require.True(t, itr.Last()) // There is no function Last in Badger.
+		// checkItrResults(t, itr, nil, nil)
 	})
 
 	t.Run("test-error-path", func(t *testing.T) {

@@ -217,7 +217,7 @@ func TestCreateDBInNonEmptyDir(t *testing.T) {
 
 func BenchmarkBadgerDBHelper(b *testing.B) {
 	b.Run("get-badgerdb-little-data", BenchmarkGetBadgerDBWithLittleData)
-	//b.Run("get-badgerdb-big-data", BenchmarkGetBadgerDBWithBigData)
+	// b.Run("get-badgerdb-big-data", BenchmarkGetBadgerDBWithBigData)
 	b.Run("put-badgerdb", BenchmarkPutBadgerDB)
 	b.Run("put-badgerdb-type-2", BenchmarkPutBadgerDB2)
 }
@@ -240,7 +240,6 @@ func BenchmarkGetBadgerDBWithLittleData(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		_, _ = db.Get(keys[i%500])
 	}
-
 }
 
 func BenchmarkGetBadgerDBWithBigData(b *testing.B) {
@@ -249,7 +248,6 @@ func BenchmarkGetBadgerDBWithBigData(b *testing.B) {
 	keysToGetApproxAmount := 500
 	for i := 0; i < keysTotalAmount; i++ {
 		_ = db.Put([]byte(createTestKey(i)), []byte(createTestValue("testdb", i)), true)
-
 	}
 	randSource := rand.NewSource(time.Now().UnixNano())
 	r := rand.New(randSource)
@@ -261,7 +259,6 @@ func BenchmarkGetBadgerDBWithBigData(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		_, _ = db.Get(keysToGet[i%keysToGetApproxAmount])
 	}
-
 }
 
 func BenchmarkPutBadgerDB(b *testing.B) {

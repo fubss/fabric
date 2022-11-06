@@ -252,10 +252,10 @@ func (vdb *versionedDB) importState(itr statedb.FullScanIterator, savepoint *ver
 		return err
 	}
 	dbBatch = vdb.db.NewUpdateBatch()
-	//numKeys := 0
+	// numKeys := 0
 	batchSize := 0
-	//maxBatchSize := int(vdb.db.GetMaxBatchSize())
-	//maxBatchCount := int(vdb.db.GetMaxBatchCount())
+	// maxBatchSize := int(vdb.db.GetMaxBatchSize())
+	// maxBatchCount := int(vdb.db.GetMaxBatchCount())
 	for {
 		versionedKV, err := itr.Next()
 		if err != nil {
@@ -270,14 +270,14 @@ func (vdb *versionedDB) importState(itr statedb.FullScanIterator, savepoint *ver
 			return err
 		}
 		batchSize += len(dbKey) + len(dbValue)
-		//numKeys++
+		// numKeys++
 		dbBatch.Put(dbKey, dbValue)
 		if batchSize >= maxDataImportBatchSize {
 			if err := vdb.db.WriteBatch(dbBatch, true); err != nil {
 				return err
 			}
 			batchSize = 0
-			//numKeys = 0
+			// numKeys = 0
 			dbBatch.Cancel()
 			dbBatch = vdb.db.NewUpdateBatch()
 		}

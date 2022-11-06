@@ -216,9 +216,10 @@ func TestCreateDBInNonEmptyDir(t *testing.T) {
 	}()
 	db.Open()
 }
+
 func BenchmarkLevelDBHelper(b *testing.B) {
 	b.Run("get-leveldb-little-data", BenchmarkGetLevelDBWithLittleData)
-	//b.Run("get-leveldb-big-data", BenchmarkGetLevelDBWithBigData)
+	// b.Run("get-leveldb-big-data", BenchmarkGetLevelDBWithBigData)
 	b.Run("put-leveldb", BenchmarkPutLevelDB)
 	b.Run("put-leveldb-type-2", BenchmarkPutLevelDB2)
 }
@@ -241,7 +242,6 @@ func BenchmarkGetLevelDBWithLittleData(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		_, _ = db.Get(keys[i%500])
 	}
-
 }
 
 func BenchmarkGetLevelDBWithBigData(b *testing.B) {
@@ -250,7 +250,6 @@ func BenchmarkGetLevelDBWithBigData(b *testing.B) {
 	keysToGetApproxAmount := 500
 	for i := 0; i < keysTotalAmount; i++ {
 		_ = db.Put([]byte(createTestKey(i)), []byte(createTestValue("testdb", i)), true)
-
 	}
 	randSource := rand.NewSource(time.Now().UnixNano())
 	r := rand.New(randSource)
@@ -262,7 +261,6 @@ func BenchmarkGetLevelDBWithBigData(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		_, _ = db.Get(keysToGet[i%keysToGetApproxAmount])
 	}
-
 }
 
 func BenchmarkPutLevelDB(b *testing.B) {

@@ -68,7 +68,7 @@ func NewDBProvider(
 			return nil, err
 		}
 	} else if stateDBConf != nil && stateDBConf.StateDatabase == ledger.Badger {
-		logger.Debugf("creating grocksdb statedb provider...") //TODO: delete this
+		logger.Debugf("creating grocksdb statedb provider...") // TODO: delete this
 		if vdbProvider, err = statebadgerdb.NewVersionedDBProvider(stateDBConf.StateDBPath); err != nil {
 			return nil, err
 		}

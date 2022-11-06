@@ -24,7 +24,7 @@ const (
 	internalDBName = "_"
 	// maxBatchSize limits the memory usage (1MB) for a batch. It is measured by the total number of bytes
 	// of all the keys in a batch.
-	//maxBatchSize = 1000000
+	// maxBatchSize = 1000000
 )
 
 var (
@@ -160,6 +160,7 @@ type DBHandle struct {
 func (h *DBHandle) GetMaxBatchSize() int64 {
 	return h.db.db.MaxBatchSize()
 }
+
 func (h *DBHandle) GetMaxBatchCount() int64 {
 	return h.db.db.MaxBatchCount()
 }
@@ -212,7 +213,7 @@ func (h *DBHandle) deleteAll() error {
 			logger.Infof("Have removed %d entries for channel %s in badgerdb %s", numKeys, h.dbName, h.db.conf.DBPath)
 			batchSize = 0
 			numKeys = 0
-			//batch.Cancel()
+			// batch.Cancel()
 			batch = h.db.db.NewWriteBatch()
 		}
 	}
