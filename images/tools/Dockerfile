@@ -40,5 +40,6 @@ COPY --from=tools /go/src/github.com/hyperledger/fabric/sampleconfig ${FABRIC_CF
 ##Copying dynamic c libraries (*.so)
 COPY --from=tools /usr/local/rocksdb/lib /usr/local/rocksdb/lib
 COPY --from=tools /usr/lib /usr/lib
+COPY --from=tools /lib /lib
 COPY --from=tools /usr/local/rocksdb /usr/local/rocksdb
 COPY --from=tools /usr/include /usr/include

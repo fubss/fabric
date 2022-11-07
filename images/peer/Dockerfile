@@ -23,7 +23,8 @@ RUN apk add --no-cache \
 	gcc \
 	git \
 	make \
-    gflags
+    gflags;
+
 ADD . $GOPATH/src/github.com/hyperledger/fabric
 WORKDIR $GOPATH/src/github.com/hyperledger/fabric
 
@@ -47,6 +48,7 @@ COPY --from=peer /go/src/github.com/hyperledger/fabric/release/linux-platform/bu
 ##Copying dynamic c libraries (*.so)
 COPY --from=peer /usr/local/rocksdb/lib /usr/local/rocksdb/lib
 COPY --from=peer /usr/lib /usr/lib
+COPY --from=peer /lib /lib
 COPY --from=peer /usr/local/rocksdb /usr/local/rocksdb
 COPY --from=peer /usr/include /usr/include
 #==================================================================
