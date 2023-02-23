@@ -6,6 +6,9 @@ code.cloudfoundry.org/clock/fakeclock
 ## explicit
 github.com/Azure/go-ansiterm
 github.com/Azure/go-ansiterm/winterm
+# github.com/DataDog/gostackparse v0.6.0
+## explicit; go 1.16
+github.com/DataDog/gostackparse
 # github.com/IBM/idemix v0.0.0-20220112103229-701e7610d405
 ## explicit; go 1.16
 github.com/IBM/idemix
@@ -131,6 +134,10 @@ github.com/docker/go-units
 # github.com/dustin/go-humanize v1.0.0
 ## explicit
 github.com/dustin/go-humanize
+# github.com/felixge/fgtrace v0.2.0
+## explicit; go 1.18
+github.com/felixge/fgtrace
+github.com/felixge/fgtrace/internal
 # github.com/felixge/httpsnoop v1.0.1
 ## explicit; go 1.13
 github.com/felixge/httpsnoop
