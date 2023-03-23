@@ -496,8 +496,8 @@ func (l *kvLedger) TxIDExists(txID string) (bool, error) {
 
 // GetTransactionByID retrieves a transaction by id
 func (l *kvLedger) GetTransactionByID(txID string) (*peer.ProcessedTransaction, error) {
-	l.blockAPIsRWLock.RLock()
-	defer l.blockAPIsRWLock.RUnlock()
+	//l.blockAPIsRWLock.RLock()
+	//defer l.blockAPIsRWLock.RUnlock()
 	tranEnv, err := l.blockStore.RetrieveTxByID(txID)
 	if err != nil {
 		return nil, err

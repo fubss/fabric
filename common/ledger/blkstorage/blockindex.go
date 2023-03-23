@@ -10,6 +10,7 @@ import (
 	"bytes"
 	"fmt"
 	"path/filepath"
+	"sync"
 	"unicode/utf8"
 
 	"github.com/golang/protobuf/proto"
@@ -52,6 +53,7 @@ type blockIdxInfo struct {
 type blockIndex struct {
 	indexItemsMap map[IndexableAttr]bool
 	db            *leveldbhelper.DBHandle
+	mux           *sync.RWMutex
 }
 
 func newBlockIndex(indexConfig *IndexConfig, db *leveldbhelper.DBHandle) (*blockIndex, error) {
@@ -81,7 +83,10 @@ func (index *blockIndex) getLastBlockIndexed() (uint64, error) {
 
 func (index *blockIndex) indexBlock(blockIdxInfo *blockIdxInfo) error {
 	// do not index anything
-	if len(index.indexItemsMap) == 0 {
+	index.mux.RLock()
+	indexItemsMapLen := len(index.indexItemsMap)
+	index.mux.RUnlock()
+	if indexItemsMapLen == 0 {
 		logger.Debug("Not indexing block... as nothing to index")
 		return nil
 	}
@@ -155,7 +160,9 @@ func (index *blockIndex) indexBlock(blockIdxInfo *blockIdxInfo) error {
 }
 
 func (index *blockIndex) isAttributeIndexed(attribute IndexableAttr) bool {
+	index.mux.RLock()
 	_, ok := index.indexItemsMap[attribute]
+	index.mux.RUnlock()
 	return ok
 }
 
