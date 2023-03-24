@@ -66,6 +66,7 @@ func newBlockIndex(indexConfig *IndexConfig, db *leveldbhelper.DBHandle) (*block
 	return &blockIndex{
 		indexItemsMap: indexItemsMap,
 		db:            db,
+		mux:           &sync.RWMutex{},
 	}, nil
 }
 
